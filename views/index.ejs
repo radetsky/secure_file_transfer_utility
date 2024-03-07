@@ -7,21 +7,18 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <header>
-        <h1>Secure File Transfer Utility</h1>
-    </header>
-
+    <%- include('partials/header') %>
     <main>
         <section>
             <h2>Send Files Securely</h2>
             <p>Transfer any file to anyone online with end-to-end encryption, without storing the file on the server, using only WebSockets.</p>
+            <form action="/sendfile" method="POST">
+                <input type="submit" value="Send File">
+            </form>
         </section>
     </main>
 
-    <footer>
-        <p>&copy; 2024 Secure File Transfer Utility</p>
-    </footer>
-
+    <%- include('partials/footer') %>
     <script src="script.js"></script>
 </body>
 </html>

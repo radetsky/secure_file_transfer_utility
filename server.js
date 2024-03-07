@@ -7,6 +7,8 @@ const uuid = require('uuid');
 const { WebSocketServer } = require('ws');
 const winston = require("winston");
 
+const page404 = __dirname + '/public/404.html';
+
 const myLogFormat = winston.format.printf(({ level, message, timestamp }) => {
     return `${timestamp} ${level} ${message}`;
 });
@@ -36,20 +38,32 @@ const map = new Map();
 const app = express();
 app.use(express.static('public'));
 app.use(sessionParser);
-app.use((req, res, next) => {
-    res.status(404).sendFile(__dirname + '/public/404.html');
-});
+app.set('view engine', 'ejs');
+
 app.post('/sendfile', (req, res) => {
     const id = uuid.v4();
-    res.redirect(`/file/${id}`);
+    res.redirect(`/send/${id}`);
+});
+app.get('/send/:id', (req, res) => {
+    const id = req.params.id;
+    map.set(id, { id, files: [] });
+    res.render('sendfile', { id });
+});
+app.get('/receive/:id', (req, res) => {
+    const id = req.params.id;
+    const info = map.get(id);
+    if (!info) {
+        res.status(404).sendFile(page404);
+        return;
+    }
+    res.render('receivefile', { id });
+});
+app.get('/', (req, res) => {
+    res.render('index');
 });
 
-app.get('/file/:id', (req, res) => {
-    const id = req.params.id;
-    const session = req.session;
-    if (session.userId === undefined) {
-        session.userId = uuid.v4();
-    }
+app.use((req, res, next) => {
+    res.status(404).sendFile(page404);
 });
 
 logger.info("Starting server...");
