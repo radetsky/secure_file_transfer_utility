@@ -12,6 +12,7 @@ document.addEventListener("DOMContentLoaded", function() {
     delete_db();
     dbh = open_db();
     wss = open_ws();
+    hideProgressBar();
 });
 
 function getDocumentId() {
@@ -31,9 +32,11 @@ function showFileInfo() {
 
 function ready_to_receiveFile(id) {
     wss.send(`${id}|ready|${fileinfo.name}`);
+    showProgressBar();
 }
 
 function showSaveBtn() {
+    hideProgressBar();
     document.getElementById('saveFileBtn').style.display = 'block';
 }
 
@@ -132,9 +135,7 @@ function saveChunk(data, offset) {
         console.error("Помилка збереження шматка файлу у IndexedDB: ", event.target.error);
     };
     tr.commit();
-    if (data.length < chunkSize) {
-        showSaveBtn();
-    }
+    setBarWidth(offset / fileinfo.size * 100);
 }
 
 function ready_to_saveFile() {
@@ -142,13 +143,17 @@ function ready_to_saveFile() {
     const os = tr.objectStore(osName);
     const request = os.openCursor();
     let listOfBlobs = [];
+    setBarWidth(0);
+    showProgressBar();
     request.onsuccess = function(event) {
         const cursor = event.target.result;
         if (cursor) {
             console.log(cursor.value);
             listOfBlobs.push(cursor.value.data);
+            setBarWidth(cursor.value.id / fileinfo.size * 100);
             cursor.continue();
         } else {
+            hideProgressBar();
             const blob = new Blob(listOfBlobs, { type: 'application/octet-stream' });
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);

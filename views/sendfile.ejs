@@ -13,9 +13,15 @@
     <div id="fileInfo"></div>
     <input type="file" id="fileInput">
     <button id="upload_button" onclick="uploadFile('<%= id %>')">Upload File</button>
-    <div id="progress"></div>
-    <div id="receive_url" style="display: none;"><pre><%= receive_url %></pre></div>
+    <div class="progress-container" id="progress-container" style="display: none;">
+        <div class="progress-bar" id="myBar">0%</div>
+    </div>
+    <div id="receive_url" style="display: none;">
+        You can share this URL with the recipient to allow them to download the file:
+        <pre><%= receive_url %></pre>
+    </div>
     <%- include('partials/footer') %>
     <script src="/jss/send.js"></script>
+    <script src="/jss/progress.js"></script>
 </body>
 </html>

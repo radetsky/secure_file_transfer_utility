@@ -10,6 +10,8 @@ document.addEventListener("DOMContentLoaded", function() {
     delete_db();
     dbh = open_db();
     wss = open_ws();
+    setBarWidth(0);
+    hideProgressBar();
 });
 
 function getDocumentId() {
@@ -23,24 +25,21 @@ function send_greeting() {
 
 function sendFile() {
     const tr = dbh.transaction([osName], "readonly");
-    tr.oncomplete = function(event) {
-        console.debug("Транзакція читання завершена");
-    };
     tr.onerror = function(event) {
         console.error("Помилка транзакції читання");
     };
-
     const os = tr.objectStore(osName);
     const cursorRequest = os.openCursor();
-
     cursorRequest.onerror = function(event) {
         console.error('Cursor error: ' + event.target.errorCode);
     };
+    setBarWidth(0);
+    showProgressBar();
 
     cursorRequest.onsuccess = function(event) {
         const cursor = event.target.result;
         if (cursor) {
-          // Handle each record (cursor.value) here
+            // Handle each record (cursor.value) here
             const result = cursor.value;
             if ( result.id === undefined ) {
                 console.error('Invalid record: offset is undefined');
@@ -66,12 +65,13 @@ function sendFile() {
             msg.set(new Uint8Array(offset_buf), id.length + command.length); // Copy offset to msg after command
             msg.set(data, id.length + command.length + 4); // Copy data to msg after command
             wss.send(msg);
-            console.debug(`Sent offset: ${result.id} and data: ${data.length} bytes`);
+            setBarWidth(result.id / fileinfo.size * 100);
             cursor.continue();
         } else {
           // No more data
             console.log('All data read');
             wss.send(`${fileinfo.uuid}|EOF|`);
+            setBarWidth(100);
         }
     };
 }
@@ -144,9 +144,6 @@ function saveChunk(file, offset) {
     reader.onload = function(event) {
         const data = event.target.result;
         const tr = dbh.transaction([osName], "readwrite");
-        tr.oncomplete = function(event) {
-            console.debug("Транзакція завершена");
-        };
         tr.onerror = function(event) {
             console.error("Помилка транзакції");
         };
@@ -157,12 +154,14 @@ function saveChunk(file, offset) {
             console.log("Помилка збереження шматка файлу у IndexedDB");
         };
         sth.onsuccess = function(event) {
-            console.log("Шматок файлу успішно збережено у IndexedDB");
             offset += chunkSize;
+            setBarWidth(offset / fileinfo.size * 100);
             if (offset < file.size) {
                 saveChunk(file, offset);
             } else {
                 console.log("Файл повністю завантажено у IndexedDB");
+                document.getElementById('receive_url').style.display = 'block';
+                hideProgressBar();
             }
         };
         tr.commit();
@@ -200,8 +199,8 @@ function uploadFile(uuid) {
     showFileInfo();
     sendFileInfo();
     let offset = 0;
+    showProgressBar();
     saveChunk(file, offset);
     document.getElementById('fileInput').style.display = 'none';
     document.getElementById('upload_button').style.display = 'none';
-    document.getElementById('receive_url').style.display = 'block';
 }

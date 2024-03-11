@@ -13,9 +13,13 @@
     <div id="uuid" style="display: none;"><%= id %></div>
     <p>On this page, you can receive a file which the sender has prepared for you.</p>
     <button onclick="ready_to_receiveFile('<%= id %>')" id="receiveFileBtn">Receive File</button>
+    <div class="progress-container" id="progress-container" style="display: none;">
+        <div class="progress-bar" id="myBar">0%</div>
+    </div>
     <button onclick="ready_to_saveFile()" id="saveFileBtn" style="display: none;">Save File</button>
     <%- include('partials/footer') %>
     <script src="/jss/receive.js"></script>
+    <script src="/jss/progress.js"></script>
 </body>
 </html>
 
