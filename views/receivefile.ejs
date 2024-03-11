@@ -11,6 +11,7 @@
     <h1>Receive File: <%= id %></h1>
     <div id="fileInfo"></div>
     <div id="uuid" style="display: none;"><%= id %></div>
+    <div id="masterKey"><%= key %></div>
     <p>On this page, you can receive a file which the sender has prepared for you.</p>
     <button onclick="ready_to_receiveFile('<%= id %>')" id="receiveFileBtn">Receive File</button>
     <div class="progress-container" id="progress-container" style="display: none;">
@@ -20,6 +21,7 @@
     <%- include('partials/footer') %>
     <script src="/jss/receive.js"></script>
     <script src="/jss/progress.js"></script>
+    <script src="/jss/main.js"></script>
 </body>
 </html>
 

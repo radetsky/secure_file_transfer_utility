@@ -50,14 +50,15 @@ app.get('/send/:id', (req, res) => {
         receive_url: receive_url,
     });
 });
-app.get('/receive/:id', (req, res) => {
+app.get('/receive/:id/:key', (req, res) => {
     const id = req.params.id;
+    const key = req.params.key;
     const info = map.get(id);
     if (!info) {
         res.status(404).sendFile(page404);
         return;
     }
-    res.render('receivefile', { id });
+    res.render('receivefile', { id, key });
 });
 app.get('/', (req, res) => {
     res.render('index');
@@ -136,8 +137,8 @@ function onMessage(ws, bufferMessage) {
             info.name = fileinfo.name;
             info.size = fileinfo.size;
             map.set(id, info);
-            logger.debug(`File info: ${info.file} (${info.size} bytes)`);
-            ws.send(JSON.stringify({ result: "OK", fileinfo: `${info.file} (${info.size} bytes)` }));
+            logger.debug(`File info: ${info.name} (${info.size} bytes)`);
+            ws.send(JSON.stringify({ result: "OK", fileinfo: `${info.name} (${info.size} bytes)` }));
         } catch (err) {
             ws.send(`Error: invalid fileinfo`);
             return;
