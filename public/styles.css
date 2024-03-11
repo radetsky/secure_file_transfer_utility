@@ -70,3 +70,8 @@ input[type="submit"]:hover {
     color: white;
 }
 
+#masterKey {
+    font-family: 'Courier New', monospace;
+    font-weight: bolder;
+}
+

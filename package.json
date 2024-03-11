@@ -5,6 +5,7 @@
   "author": "Oleksii Radetskyi",
   "license": "MIT",
   "dependencies": {
+    "copy-webpack-plugin": "^12.0.2",
     "ejs": "^3.1.9",
     "express": "^4.18.3",
     "express-session": "^1.18.0",
@@ -14,6 +15,12 @@
     "ws": "^8.16.0"
   },
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "build": "webpack build"
+  },
+  "devDependencies": {
+    "@webpack-cli/generators": "^3.0.7",
+    "webpack": "^5.90.3",
+    "webpack-cli": "^5.1.4"
   }
 }

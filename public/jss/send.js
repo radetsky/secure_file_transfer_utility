@@ -6,12 +6,25 @@ let wss; // WebSocket connection
 let fileinfo; // File info to send { uuid, name, size }
 const greeting = "I am Alice!";
 
+let masterKey;
+
 document.addEventListener("DOMContentLoaded", function() {
     delete_db();
     dbh = open_db();
     wss = open_ws();
     setBarWidth(0);
     hideProgressBar();
+    themis.init().then(() => {
+        masterKey = themis.masterKey();
+        document.getElementById('masterKey').textContent = themis.uint8ArrayToHex(masterKey);
+        const textEncoder = new TextEncoder();
+        const textDecoder = new TextDecoder();
+        const testEncrypt = textEncoder.encode('Hello, Themis!');
+        const encrypted = themis.encryptData(masterKey, testEncrypt);
+        const decrypted = themis.decryptData(masterKey, encrypted);
+        console.log('Encrypted:', encrypted.toString());
+        console.log('Decrypted:', textDecoder.decode(decrypted));
+    });
 });
 
 function getDocumentId() {
@@ -142,7 +155,9 @@ function saveChunk(file, offset) {
     const blob = file.slice(offset, offset + chunkSize);
 
     reader.onload = function(event) {
-        const data = event.target.result;
+        // const data = event.target.result;
+        const data = themis.encryptData(masterKey, new Uint8Array(event.target.result));
+
         const tr = dbh.transaction([osName], "readwrite");
         tr.onerror = function(event) {
             console.error("Помилка транзакції");
@@ -160,6 +175,9 @@ function saveChunk(file, offset) {
                 saveChunk(file, offset);
             } else {
                 console.log("Файл повністю завантажено у IndexedDB");
+                let receiveUrl = document.getElementById('receive_url').textContent.trim();
+                receiveUrl = receiveUrl + '/' + document.getElementById('masterKey').textContent;
+                document.getElementById('receive_url').textContent = receiveUrl;
                 document.getElementById('receive_url').style.display = 'block';
                 hideProgressBar();
             }

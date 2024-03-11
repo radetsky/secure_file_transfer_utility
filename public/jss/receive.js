@@ -8,11 +8,17 @@ let fileinfo; // File info to receive { uuid, name, size }
 
 const chunkSize = 1024 * 1024 * 1; // 1MB chunk size
 
+let masterKey;
+
 document.addEventListener("DOMContentLoaded", function() {
     delete_db();
     dbh = open_db();
     wss = open_ws();
     hideProgressBar();
+    themis.init().then(() => {
+        const hexKey = document.getElementById('masterKey').textContent;
+        masterKey = themis.hexToUint8Array(hexKey);
+    });
 });
 
 function getDocumentId() {
@@ -71,7 +77,8 @@ function onMessage(ws, msg) {
                 const payload = msg.slice(getDocumentId().length + 10);
                 payload.arrayBuffer().then((buffer1) => {
                     const received_data = new Uint8Array(buffer1);
-                    saveChunk(received_data, received_offset);
+                    const decrypted_data = themis.decryptData(masterKey, received_data);
+                    saveChunk(decrypted_data, received_offset);
                 });
             });
         });
