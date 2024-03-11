@@ -92,7 +92,7 @@ function onGreetingAlice(ws, id) {
 function onGreetingBob(ws, id) {
     const info = map.get(id);
     if (!info) {
-        ws.send(`Error: unknown id ${id}`);
+        ws.send(JSON.stringify({result: 'error', message: `unknown id ${id}`}));
         return;
     }
     info.bob = ws;
@@ -100,8 +100,8 @@ function onGreetingBob(ws, id) {
     logger.info(`Hello, Bob: ${id}`);
     const info2bob = {
         result: "OK",
-        id: info.id,
-        file: info.file,
+        uuid: info.id,
+        name: info.name,
         size: info.size,
     };
     ws.send(JSON.stringify(info2bob));
@@ -118,7 +118,6 @@ function onMessage(ws, bufferMessage) {
         onGreetingBob(ws, message.slice(greetingBob.length + 1));
         return;
     }
-
     const parts = message.split('|');
     const id = parts[0];
     const info = map.get(id);
@@ -134,7 +133,7 @@ function onMessage(ws, bufferMessage) {
     if (command === 'fileinfo') {
         try {
             const fileinfo = JSON.parse(parts[2]);
-            info.file = fileinfo.name;
+            info.name = fileinfo.name;
             info.size = fileinfo.size;
             map.set(id, info);
             logger.debug(`File info: ${info.file} (${info.size} bytes)`);
@@ -151,6 +150,11 @@ function onMessage(ws, bufferMessage) {
         };
         info.alice.send(JSON.stringify(info2alice));
         logger.debug(`Bob is ready: ${id}`);
+    }
+
+    if (command === 'EOF') {
+        logger.debug(`EOF: ${id}`);
+        info.bob.send(JSON.stringify({ result: "EOF" }));
     }
 
     if (command === 'data') {

@@ -4,7 +4,7 @@ let dbh; // Database handle
 
 let wss; // WebSocket connection
 const greeting = "I am Bob!";
-let info = null;
+let fileinfo; // File info to receive { uuid, name, size }
 
 const chunkSize = 1024 * 1024 * 1; // 1MB chunk size
 
@@ -23,24 +23,36 @@ function send_greeting() {
     wss.send(`${greeting}|${id}`);
 }
 
-function showFileInfo(name, size) {
+function showFileInfo() {
     const fileInfoElement = document.createElement('h3');
-    info = `${name} (${size} bytes)`;
-    fileInfoElement.textContent = info;
-    const fileInfo = document.getElementById('fileInfo');
-    fileInfo.replaceChildren(fileInfoElement);
+    fileInfoElement.textContent = `${fileinfo.name} (${fileinfo.size} bytes)`;
+    document.getElementById('fileInfo').replaceChildren(fileInfoElement);
 }
 
 function ready_to_receiveFile(id) {
-    wss.send(`${id}|ready|${info}`);
+    wss.send(`${id}|ready|${fileinfo.name}`);
+}
+
+function showSaveBtn() {
+    document.getElementById('saveFileBtn').style.display = 'block';
 }
 
 function onMessage(ws, msg) {
     try {
         const info = JSON.parse(msg);
-        if (info.result !== undefined && info.result === 'OK') {
-            showFileInfo(info.file, info.size);
-            return;
+        if (info.result !== undefined) {
+            switch (info.result) {
+            case 'OK':
+                fileinfo = info;
+                showFileInfo();
+                return;
+            case 'EOF':
+                setTimeout(showSaveBtn, 1000);
+                return;
+            default:
+                console.error("Invalid result: ", info.result);
+                return;
+            }
         }
     } catch (err) {
         const id_buf = msg.slice(0, getDocumentId().length);
@@ -56,12 +68,7 @@ function onMessage(ws, msg) {
                 const payload = msg.slice(getDocumentId().length + 10);
                 payload.arrayBuffer().then((buffer1) => {
                     const received_data = new Uint8Array(buffer1);
-                    console.log("Payload: ", received_data);
-                    console.log(`Received offset: ${received_offset} and data: ${payload.size} bytes`);
                     saveChunk(received_data, received_offset);
-                    if (payload.size < chunkSize) {
-                        console.log("File received");
-                    }
                 });
             });
         });
@@ -116,33 +123,21 @@ function open_db() {
 
 function saveChunk(data, offset) {
     const tr = dbh.transaction([osName], "readwrite");
-    tr.oncomplete = function(event) {
-        console.debug("Транзакція завершена");
-    };
     tr.onerror = function(event) {
         console.error("Помилка транзакції");
     };
     const os = tr.objectStore(osName);
     const sth = os.add({ id: offset, data: data });
-
     sth.onerror = function(event) {
         console.error("Помилка збереження шматка файлу у IndexedDB: ", event.target.error);
     };
-    sth.onsuccess = function(event) {
-        console.log("Шматок файлу успішно збережено у IndexedDB");
-    };
     tr.commit();
     if (data.length < chunkSize) {
-        console.log("File stored in IndexedDB");
-        document.getElementById('saveFileBtn').style.display = 'block';
+        showSaveBtn();
     }
 }
 
 function ready_to_saveFile() {
-    // read from IndexedDB order by id (offset)
-    // make blob from data
-    // show node <a> with href = URL.createObjectURL(blob) and download = file name
-    // and click it
     const tr = dbh.transaction([osName], "readonly");
     const os = tr.objectStore(osName);
     const request = os.openCursor();
@@ -154,11 +149,10 @@ function ready_to_saveFile() {
             listOfBlobs.push(cursor.value.data);
             cursor.continue();
         } else {
-            console.log("No more entries");
             const blob = new Blob(listOfBlobs, { type: 'application/octet-stream' });
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
-            a.download = "file.bin";
+            a.download = fileinfo.name;
             a.click();
         }
     };

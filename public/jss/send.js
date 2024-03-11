@@ -3,6 +3,7 @@ const osName = "files";
 const chunkSize = 1024 * 1024 * 1; // 1MB chunk size
 let dbh; // Database handle
 let wss; // WebSocket connection
+let fileinfo; // File info to send { uuid, name, size }
 const greeting = "I am Alice!";
 
 document.addEventListener("DOMContentLoaded", function() {
@@ -65,13 +66,12 @@ function sendFile() {
             msg.set(new Uint8Array(offset_buf), id.length + command.length); // Copy offset to msg after command
             msg.set(data, id.length + command.length + 4); // Copy data to msg after command
             wss.send(msg);
-            console.log(msg);
             console.debug(`Sent offset: ${result.id} and data: ${data.length} bytes`);
-
             cursor.continue();
         } else {
           // No more data
             console.log('All data read');
+            wss.send(`${fileinfo.uuid}|EOF|`);
         }
     };
 }
@@ -170,19 +170,15 @@ function saveChunk(file, offset) {
     reader.readAsArrayBuffer(blob);
 }
 
-function showFileInfo(name, size) {
+function showFileInfo() {
     const fileInfoElement = document.createElement('h3');
-    fileInfoElement.textContent = `${name} (${size} bytes)`;
+    fileInfoElement.textContent = `${fileinfo.name} (${fileinfo.size} bytes)`;
     const fileInfo = document.getElementById('fileInfo');
     fileInfo.replaceChildren(fileInfoElement);
 }
 
-function sendFileInfo(name, size, uuid) {
-    const info = {
-        name,
-        size,
-    };
-    wss.send(`${uuid}|fileinfo|${JSON.stringify(info)}`);
+function sendFileInfo() {
+    wss.send(`${fileinfo.uuid}|fileinfo|${JSON.stringify(fileinfo)}`);
 }
 
 function uploadFile(uuid) {
@@ -196,8 +192,13 @@ function uploadFile(uuid) {
         alert('Файл занадто великий для завантаження.');
         return;
     }
-    showFileInfo(file.name, file.size);
-    sendFileInfo(file.name, file.size, uuid);
+    fileinfo = {
+        uuid: uuid,
+        name: file.name,
+        size: file.size,
+    };
+    showFileInfo();
+    sendFileInfo();
     let offset = 0;
     saveChunk(file, offset);
     document.getElementById('fileInput').style.display = 'none';
