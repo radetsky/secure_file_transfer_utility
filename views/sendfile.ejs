@@ -8,12 +8,14 @@
 </head>
 <body>
     <%- include('partials/header') %>
-    <h2>File ID: <%= id %></h2>
-    <form action="/upload" method="post" enctype="multipart/form-data">
-        <h2>Upload a File</h2>
-        <input type="file" name="file" id="file">
-        <input type="submit" value="Upload">
-    </form>
+    <h2 id="file_id_declaration">File ID: <%= id %></h2>
+    <div id="uuid" style="display: none;"><%= id %></div>
+    <div id="fileInfo"></div>
+    <input type="file" id="fileInput">
+    <button id="upload_button" onclick="uploadFile('<%= id %>')">Upload File</button>
+    <div id="progress"></div>
+    <div id="receive_url" style="display: none;"><pre><%= receive_url %></pre></div>
     <%- include('partials/footer') %>
+    <script src="/jss/send.js"></script>
 </body>
 </html>

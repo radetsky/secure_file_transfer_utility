@@ -7,6 +7,9 @@ const uuid = require('uuid');
 const { WebSocketServer } = require('ws');
 const winston = require("winston");
 
+const greetingAlice = "I am Alice!";
+const greetingBob = "I am Bob!";
+
 const page404 = __dirname + '/public/404.html';
 
 const myLogFormat = winston.format.printf(({ level, message, timestamp }) => {
@@ -23,31 +26,29 @@ const logger = winston.createLogger({
     transports: [new winston.transports.Console()],
 });
 
-function onSocketError(err) {
-    logger.error("Socket error: %s", err);
-}
-
-const sessionParser = session({
-    saveUninitialized: false,
-    secret: '$eC8R4Ty',
-    resave: false,
-});
-
 const map = new Map();
 
 const app = express();
 app.use(express.static('public'));
-app.use(sessionParser);
 app.set('view engine', 'ejs');
 
 app.post('/sendfile', (req, res) => {
     const id = uuid.v4();
+    map.set(id, { id, file: null, size: null, alice: null, bob: null });
     res.redirect(`/send/${id}`);
 });
 app.get('/send/:id', (req, res) => {
     const id = req.params.id;
-    map.set(id, { id, files: [] });
-    res.render('sendfile', { id });
+    const receive_url = `${req.protocol}://${req.get('host')}/receive/${id}`
+    const info = map.get(id);
+    if (!info) {
+        res.status(404).sendFile(page404);
+        return;
+    }
+    res.render('sendfile', {
+        id: id,
+        receive_url: receive_url,
+    });
 });
 app.get('/receive/:id', (req, res) => {
     const id = req.params.id;
@@ -71,6 +72,114 @@ const server = http.createServer(app);
 
 logger.info("Starting WebSocket server...");
 const wss = new WebSocketServer({ clientTracking: false, noServer: true });
+
+function onSocketError(err) {
+    logger.error(`Socket error: ${err}`);
+}
+
+function onGreetingAlice(ws, id) {
+    const info = map.get(id);
+    if (!info) {
+        ws.send(`Error: unknown id ${id}`);
+        return;
+    }
+    info.alice = ws;
+    map.set(id, info);
+    logger.info(`Hello, Alice: ${id}`);
+    ws.send(JSON.stringify({ result: "OK", id: id }));
+}
+
+function onGreetingBob(ws, id) {
+    const info = map.get(id);
+    if (!info) {
+        ws.send(`Error: unknown id ${id}`);
+        return;
+    }
+    info.bob = ws;
+    map.set(id, info);
+    logger.info(`Hello, Bob: ${id}`);
+    const info2bob = {
+        result: "OK",
+        id: info.id,
+        file: info.file,
+        size: info.size,
+    };
+    ws.send(JSON.stringify(info2bob));
+}
+
+function onMessage(ws, bufferMessage) {
+    logger.debug(`Received message: ${bufferMessage.length} bytes`);
+    const message = bufferMessage.toString('utf-8');
+    if (message.startsWith(greetingAlice)) {
+        onGreetingAlice(ws, message.slice(greetingAlice.length + 1));
+        return;
+    }
+    if (message.startsWith(greetingBob)) {
+        onGreetingBob(ws, message.slice(greetingBob.length + 1));
+        return;
+    }
+
+    const parts = message.split('|');
+    const id = parts[0];
+    const info = map.get(id);
+    if (!info) {
+        ws.send(`Error: unknown id ${id}`);
+        return;
+    }
+    if (parts.length < 3) {
+        ws.send(`Error: invalid message`);
+        return;
+    }
+    const command = parts[1];
+    if (command === 'fileinfo') {
+        try {
+            const fileinfo = JSON.parse(parts[2]);
+            info.file = fileinfo.name;
+            info.size = fileinfo.size;
+            map.set(id, info);
+            logger.debug(`File info: ${info.file} (${info.size} bytes)`);
+            ws.send(JSON.stringify({ result: "OK", fileinfo: `${info.file} (${info.size} bytes)` }));
+        } catch (err) {
+            ws.send(`Error: invalid fileinfo`);
+            return;
+        }
+    }
+    if (command === 'ready') {
+        const info2alice = {
+            result: "bob is ready",
+            id: id,
+        };
+        info.alice.send(JSON.stringify(info2alice));
+        logger.debug(`Bob is ready: ${id}`);
+    }
+
+    if (command === 'data') {
+        const data = bufferMessage.slice(id.length + command.length + 2 + 4); //we also have 32-bit offset after the command
+        logger.debug(`Data: ${data.length} bytes`);
+        info.bob.send(bufferMessage);
+    }
+}
+
+server.on('upgrade', function (request, socket, head) {
+    socket.on('error', onSocketError);
+    logger.debug('Websocker upgrade request received');
+    wss.handleUpgrade(request, socket, head, function (ws) {
+        wss.emit('connection', ws, request);
+    });
+});
+
+wss.on('connection', function (ws, request) {
+    ws.on('error', onSocketError);
+    ws.on('open', function () {
+        logger.debug('WebSocket connection established');
+    })
+    ws.on('message', function (message) {
+        onMessage(ws, message);
+    });
+    ws.on('close', function () {
+        logger.debug('WebSocket was closed');
+    });
+});
 
 server.listen(8080, function () {
     logger.info('Listening on http://localhost:8080');
