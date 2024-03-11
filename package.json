@@ -9,7 +9,11 @@
     "express": "^4.18.3",
     "express-session": "^1.18.0",
     "uuid": "^9.0.1",
+    "wasm-themis": "^0.15.0",
     "winston": "^3.12.0",
     "ws": "^8.16.0"
+  },
+  "scripts": {
+    "start": "node server.js"
   }
 }

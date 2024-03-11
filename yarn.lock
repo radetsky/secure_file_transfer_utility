@@ -767,6 +767,11 @@ vary@~1.1.2:
   resolved "https://registry.yarnpkg.com/vary/-/vary-1.1.2.tgz#2299f02c6ded30d4a5961b0b9f74524a18f634fc"
   integrity sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==
 
+wasm-themis@^0.15.0:
+  version "0.15.0"
+  resolved "https://registry.yarnpkg.com/wasm-themis/-/wasm-themis-0.15.0.tgz#841aa29f015472678e035d6895e09e50882678c2"
+  integrity sha512-QEZ/uzmYOM1JtWawItgJps2/E+bJKgDs/3qR0bxyOZ+qY4aoDz6H4uCCEkibyVFyp3HnZ4wius6KFyVTIAkqtA==
+
 winston-transport@^4.7.0:
   version "4.7.0"
   resolved "https://registry.yarnpkg.com/winston-transport/-/winston-transport-4.7.0.tgz#e302e6889e6ccb7f383b926df6936a5b781bd1f0"
