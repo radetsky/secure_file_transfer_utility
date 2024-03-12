@@ -201,6 +201,10 @@ function uploadFile(uuid) {
         alert('Файл занадто великий для завантаження.');
         return;
     }
+    if (file.size < 8 ) {
+        alert('Файл занадто малий для завантаження.');
+        return;
+    }
     fileinfo = {
         uuid: uuid,
         name: file.name,

@@ -1,6 +1,8 @@
 'use strict';
 
-const session = require('express-session');
+const pgp = require('pg-promise')(/* options */)
+const db = pgp(process.env.PGDB)
+
 const express = require('express');
 const http = require('http');
 const uuid = require('uuid');
@@ -31,6 +33,13 @@ const map = new Map();
 const app = express();
 app.use(express.static('public'));
 app.set('view engine', 'ejs');
+
+app.get('/terms_of_service', (req, res) => {
+    res.render('tos');
+});
+app.get('/about', (req, res) => {
+    res.render('about');
+});
 
 app.post('/sendfile', (req, res) => {
     const id = uuid.v4();
@@ -67,6 +76,14 @@ app.get('/', (req, res) => {
 app.use((req, res, next) => {
     res.status(404).sendFile(page404);
 });
+
+/* Database */
+function insert_encrypted_fileinfo(uuid, name, size) {
+    return db.none('INSERT INTO encrypted_files(uuid, name, size) VALUES($1, $2, $3)', [uuid, name, size]);
+}
+function insert_transferred_fileinfo(uuid, name, size) {
+    return db.none('INSERT INTO transferred_files(uuid, name, size) VALUES($1, $2, $3)', [uuid, name, size]);
+}
 
 logger.info("Starting server...");
 const server = http.createServer(app);
@@ -137,6 +154,7 @@ function onMessage(ws, bufferMessage) {
             info.name = fileinfo.name;
             info.size = fileinfo.size;
             map.set(id, info);
+            insert_encrypted_fileinfo(id, fileinfo.name, fileinfo.size);
             logger.debug(`File info: ${info.name} (${info.size} bytes)`);
             ws.send(JSON.stringify({ result: "OK", fileinfo: `${info.name} (${info.size} bytes)` }));
         } catch (err) {
@@ -155,6 +173,7 @@ function onMessage(ws, bufferMessage) {
 
     if (command === 'EOF') {
         logger.debug(`EOF: ${id}`);
+        insert_transferred_fileinfo(id, info.name, info.size);
         info.bob.send(JSON.stringify({ result: "EOF" }));
     }
 
