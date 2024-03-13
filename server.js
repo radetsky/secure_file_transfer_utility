@@ -1,6 +1,10 @@
 'use strict';
 
 const pgp = require('pg-promise')(/* options */)
+if (!process.env.PGDB) {
+    console.error("Please set PGDB environment variable to the connection string of the PostgreSQL database");
+    process.exit(1);
+}
 const db = pgp(process.env.PGDB)
 
 const express = require('express');
@@ -29,6 +33,7 @@ const logger = winston.createLogger({
 });
 
 const map = new Map();
+/* Express */
 
 const app = express();
 app.use(express.static('public'));
@@ -40,18 +45,23 @@ app.get('/terms_of_service', (req, res) => {
 app.get('/about', (req, res) => {
     res.render('about');
 });
-
 app.post('/sendfile', (req, res) => {
     const id = uuid.v4();
-    map.set(id, { id, file: null, size: null, alice: null, bob: null });
+    map.set(id, { id, name: null, size: null, alice: null, bob: null });
     res.redirect(`/send/${id}`);
 });
 app.get('/send/:id', (req, res) => {
-    const id = req.params.id;
+    let id = req.params.id;
     const receive_url = `${req.protocol}://${req.get('host')}/receive/${id}`
     const info = map.get(id);
     if (!info) {
         res.status(404).sendFile(page404);
+        return;
+    }
+    if (info.name !== null) {
+        id = uuid.v4();
+        map.set(id, { id, name: null, size: null, alice: null, bob: null });
+        res.redirect(`/send/${id}`);
         return;
     }
     res.render('sendfile', {
@@ -79,12 +89,18 @@ app.use((req, res, next) => {
 
 /* Database */
 function insert_encrypted_fileinfo(uuid, name, size) {
-    return db.none('INSERT INTO encrypted_files(uuid, name, size) VALUES($1, $2, $3)', [uuid, name, size]);
+    db.none('INSERT INTO encrypted_files(uuid, name, size) VALUES($1, $2, $3)', [uuid, name, size]).catch((err) => {
+        logger.error(`Error inserting encrypted file info: ${err}`);
+    });
 }
 function insert_transferred_fileinfo(uuid, name, size) {
-    return db.none('INSERT INTO transferred_files(uuid, name, size) VALUES($1, $2, $3)', [uuid, name, size]);
+    db.none('INSERT INTO transferred_files(uuid, name, size) VALUES($1, $2, $3)', [uuid, name, size]).catch((err) => {
+        logger.error(`Error inserting transferred file info: ${err}`);
+    });
 }
 
+
+/* WebSocket server */
 logger.info("Starting server...");
 const server = http.createServer(app);
 

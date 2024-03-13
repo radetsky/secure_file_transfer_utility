@@ -187,7 +187,11 @@ function showFileInfo() {
 }
 
 function sendFileInfo() {
-    wss.send(`${fileinfo.uuid}|fileinfo|${JSON.stringify(fileinfo)}`);
+    try {
+        wss.send(`${fileinfo.uuid}|fileinfo|${JSON.stringify(fileinfo)}`);
+    } catch (err) {
+        alert(`Error sending file information to the recipient. The page will be reloaded. `);
+    }
 }
 
 function uploadFile(uuid) {
