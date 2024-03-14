@@ -1,3 +1,5 @@
+let progress;
+
 function setBarWidth(width) {
     let progress = Math.round(width * 100) / 100;
     if (progress > 100) {
@@ -9,12 +11,15 @@ function setBarWidth(width) {
 }
 
 function showProgressBar() {
-    const progress = document.getElementById("progress-container");
-    progress.style.display = 'block';
+    progress = new bootstrap.Modal('#progress-modal', {
+        keyboard: false
+    });
+    progress.show();
 }
 
 function hideProgressBar() {
-    const progress = document.getElementById("progress-container");
-    progress.style.display = 'none';
+    if (progress) {
+        progress.hide();
+    }
 }
 

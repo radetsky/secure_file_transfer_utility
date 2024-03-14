@@ -10,20 +10,77 @@
 </head>
 <body>
     <%- include('partials/header') %>
-    <h2 id="file_id_declaration">File ID: <%= id %></h2>
+
+    <div class="px-4 py-3 my-3 text-center">
+        <svg class="bi mt-4 mb-3" style="color: var(--bs-indigo);" width="100" height="100"><use xlink:href="#sftu"/></svg>
+        <h1 class="display-5 fw-bold text-body-emphasis">Encrypt the file</h1>
+        <div class="col-lg-9 mx-auto">
+            <p class="lead mb-4">On this page, you can protect and send your file using encryption directly in your web browser. Once the file is fully encrypted, it's ready to be sent. You'll find the encryption key displayed on the screen below.</p>
+            <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                <div class="col-auto">
+                    <input type="file" class="form-control" id="fileInput">
+                </div>
+                <button id="upload_button" onclick="uploadFile('<%= id %>')" type="submit" class="btn btn-primary btn-md px-4 gap-3">Encrypt the file</button>
+                <div id="fileInfo" style="display: none;">
+                    <h4>You have selected the following file</h4>
+                    <p id="fileName"></p>
+                    <p>Size of the file: <span id="fileSize"></span> bytes</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4 col-lg-9 mx-auto" id="encryption_key_table">
+            <table class="table col-lg-9" >
+                <caption>The key is used to encrypt the file</caption>
+                <thead>
+                    <tr>
+                        <th scope="col"><p class="lead">Encryption key</p></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><p class="fs-5 font-monospace fw-light" id="masterKey"></p></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mt-4 col-lg-12 mx-auto" id="receive_url_table" style="display: none;">
+            <table class="table col-lg-9" >
+                <caption>You can share this URL with the recipient to allow them to download the file. Do not close the window!</caption>
+                <thead>
+                    <tr>
+                        <th scope="col"><p class="lead">Share the URL
+                            <svg onclick="copyToClipboard('receive_url');"  class="bi mt-4 mb-3" style="color: var(--bs-indigo);" width="16" height="16"><use xlink:href="#copy-to-clipboard"/></svg>
+                        </p></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><p class="fs-5 font-monospace fw-light" id="receive_url"><%= receive_url %></p></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+    </div>
     <div id="uuid" style="display: none;"><%= id %></div>
-    <div id="fileInfo"></div>
-    <div id="masterKey"></div>
-    <input type="file" id="fileInput">
-    <button id="upload_button" onclick="uploadFile('<%= id %>')">Encrypt the file</button>
-    <div class="progress-container" id="progress-container" style="display: none;">
-        <div class="progress-bar" id="myBar">0%</div>
+
+    <div class="modal fade" tabindex="-1" id="progress-modal">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Encrypting the file</h4>
+                </div>
+                <div class="modal-body">
+                    <div class="progress" role="progressbar" aria-label="Encryption progress" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" id="myBar" style="width: 75%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div id="receive_url" style="display: none;">
-        You can share this URL with the recipient to allow them to download the file:
-        <dd><%= receive_url %></dd>
-    </div>
     <%- include('partials/footer') %>
     <script src="/jss/send.js"></script>
     <script src="/jss/progress.js"></script>

@@ -172,6 +172,8 @@ function saveChunk(file, offset) {
                 document.getElementById('receive_url').textContent = receiveUrl;
                 document.getElementById('receive_url').style.display = 'block';
                 hideProgressBar();
+                document.getElementById('encryption_key_table').style.display = 'none';
+                document.getElementById('receive_url_table').style.display = 'block';
             }
         };
         tr.commit();
@@ -180,10 +182,9 @@ function saveChunk(file, offset) {
 }
 
 function showFileInfo() {
-    const fileInfoElement = document.createElement('h3');
-    fileInfoElement.textContent = `${fileinfo.name} (${fileinfo.size} bytes)`;
-    const fileInfo = document.getElementById('fileInfo');
-    fileInfo.replaceChildren(fileInfoElement);
+    document.getElementById('fileInfo').style.display = 'block';
+    document.getElementById('fileName').textContent = fileinfo.name;
+    document.getElementById('fileSize').textContent = fileinfo.size;
 }
 
 function sendFileInfo() {
@@ -197,7 +198,7 @@ function sendFileInfo() {
 function uploadFile(uuid) {
     const fileInput = document.getElementById('fileInput');
     if (!fileInput.files.length) {
-        alert('Будь ласка, виберіть файл для завантаження.');
+        alert('Please select a file to upload.');
         return;
     }
     const file = fileInput.files[0];
@@ -221,4 +222,15 @@ function uploadFile(uuid) {
     saveChunk(file, offset);
     document.getElementById('fileInput').style.display = 'none';
     document.getElementById('upload_button').style.display = 'none';
+}
+
+function copyToClipboard(elementId) {
+    const contentToCopy = document.getElementById(elementId).textContent;
+    navigator.clipboard.writeText(contentToCopy)
+        .then(() => {
+            alert("Copied to clipboard: " + contentToCopy);
+        })
+        .catch(err => {
+            console.error('Failed to copy: ', err);
+        });
 }
