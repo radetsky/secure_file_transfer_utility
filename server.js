@@ -45,6 +45,9 @@ app.get('/terms_of_service', (req, res) => {
 app.get('/about', (req, res) => {
     res.render('about');
 });
+app.get('/receive_page', (req, res) => {
+    res.render('receive_page');
+});
 app.post('/sendfile', (req, res) => {
     const id = uuid.v4();
     map.set(id, { id, name: null, size: null, alice: null, bob: null });
