@@ -43,7 +43,9 @@ function ready_to_receiveFile(id) {
 
 function showSaveBtn() {
     hideProgressBar();
-    document.getElementById('saveFileBtn').style.display = 'block';
+    document.getElementById('saveFileBtn').style.display = 'inline-block';
+    document.getElementById('receiveFileBtn').style.display = 'none';
+    document.getElementById('encryption_key_table').style.display = 'none';
 }
 
 function onMessage(ws, msg) {
@@ -57,6 +59,9 @@ function onMessage(ws, msg) {
                 return;
             case 'EOF':
                 setTimeout(showSaveBtn, 1000);
+                return;
+            case 'ERROR':
+                console.error("Error: ", info.error);
                 return;
             default:
                 console.error("Invalid result: ", info.result);

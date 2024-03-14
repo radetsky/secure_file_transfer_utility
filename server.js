@@ -205,14 +205,13 @@ function onMessage(ws, bufferMessage) {
 
 server.on('upgrade', function (request, socket, head) {
     socket.on('error', onSocketError);
-    logger.debug('Websocker upgrade request received');
+    logger.debug('Websocket upgrade request received');
     wss.handleUpgrade(request, socket, head, function (ws) {
         wss.emit('connection', ws, request);
     });
 });
 
 wss.on('connection', function (ws, request) {
-    ws.on('error', onSocketError);
     ws.on('open', function () {
         logger.debug('WebSocket connection established');
     })
@@ -221,6 +220,12 @@ wss.on('connection', function (ws, request) {
     });
     ws.on('close', function () {
         logger.debug('WebSocket was closed');
+        for (const [key, value] of map.entries()) {
+            if (value.alice === ws && value.name !== null) {
+                map.delete(key);
+                logger.debug(`Deleted map entry ${key}`);
+            }
+        }
     });
 });
 

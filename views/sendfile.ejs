@@ -52,7 +52,7 @@
                     <tr>
                         <th scope="col"><p class="lead">Share the URL
                             <svg onclick="copyToClipboard('receive_url');"  class="bi mt-4 mb-3" style="color: var(--bs-indigo);" width="16" height="16"><use xlink:href="#copy-to-clipboard"/></svg>
-                        </p></th>
+                        </p> and do not close the window!</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -70,11 +70,11 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h4 class="modal-title">Encrypting the file</h4>
+                    <h4 class="modal-title" id="progress-title">Encrypting the file</h4>
                 </div>
                 <div class="modal-body">
-                    <div class="progress" role="progressbar" aria-label="Encryption progress" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100">
-                        <div class="progress-bar progress-bar-striped progress-bar-animated" id="myBar" style="width: 75%"></div>
+                    <div class="progress" role="progressbar" aria-label="Encryption progress" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" id="myBar" style="width: 0%"></div>
                     </div>
                 </div>
             </div>

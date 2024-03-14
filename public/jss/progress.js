@@ -1,4 +1,4 @@
-let progress;
+let modal_progress;
 
 function setBarWidth(width) {
     let progress = Math.round(width * 100) / 100;
@@ -11,15 +11,21 @@ function setBarWidth(width) {
 }
 
 function showProgressBar() {
-    progress = new bootstrap.Modal('#progress-modal', {
-        keyboard: false
-    });
-    progress.show();
+    if (!modal_progress) {
+        modal_progress = new bootstrap.Modal('#progress-modal', {
+            keyboard: false
+        });
+    }
+    modal_progress.show();
 }
 
 function hideProgressBar() {
-    if (progress) {
-        progress.hide();
+    if (modal_progress) {
+        modal_progress.hide();
     }
+}
+
+function setProgressTitle(title) {
+    document.getElementById('progress-title').textContent = title;
 }
 

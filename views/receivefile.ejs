@@ -5,23 +5,62 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Receive File <%= id %></title>
     <link rel="stylesheet" href="/styles.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="/jss/bootstrap/colors.js"></script>
 </head>
 <body>
     <%- include('partials/header') %>
-    <h1>Receive File: <%= id %></h1>
-    <div id="fileInfo"></div>
-    <div id="uuid" style="display: none;"><%= id %></div>
-    <div id="masterKey"><%= key %></div>
-    <p>On this page, you can receive a file which the sender has prepared for you.</p>
-    <button onclick="ready_to_receiveFile('<%= id %>')" id="receiveFileBtn">Receive and decrypt</button>
-    <div class="progress-container" id="progress-container" style="display: none;">
-        <div class="progress-bar" id="myBar">0%</div>
+    <div class="px-4 py-3 my-3 text-center">
+        <svg class="bi mt-4 mb-3" style="color: var(--bs-indigo);" width="100" height="100"><use xlink:href="#sftu"/></svg>
+        <h1 class="display-5 fw-bold text-body-emphasis">Receive and decrypt the file</h1>
+        <div class="col-lg-9 mx-auto">
+            <p class="lead mb-4">On this page, you can receive a file which the sender has prepared for you.</p>
+            <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                <div id="fileInfo">
+                </div>
+            </div>
+        </div>
+        <div id="uuid" style="display: none;"><%= id %></div>
+        <button class="btn btn-primary btn-lg px-4 gap-3" onclick="ready_to_receiveFile('<%= id %>')" id="receiveFileBtn">Receive and decrypt</button>
+        <button class="btn btn-primary btn-lg px-4 gap-3 mt-5" onclick="ready_to_saveFile()" id="saveFileBtn" style="display: none;">Save File</button>
+        <div class="mt-4 col-lg-9 mx-auto" id="encryption_key_table">
+            <table class="table col-lg-9" >
+                <caption>The key is used to decrypt the file</caption>
+                <thead>
+                    <tr>
+                        <th scope="col"><p class="lead">Decryption key</p></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><p class="fs-5 font-monospace fw-light" id="masterKey"><%= key %></p></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
-    <button onclick="ready_to_saveFile()" id="saveFileBtn" style="display: none;">Save File</button>
+
+    <div class="modal fade" tabindex="-1" id="progress-modal">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Receiving and decrypting the file</h4>
+                </div>
+                <div class="modal-body">
+                    <div class="progress" role="progressbar" aria-label="Encryption progress" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" id="myBar" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <%- include('partials/footer') %>
     <script src="/jss/receive.js"></script>
     <script src="/jss/progress.js"></script>
     <script src="/jss/main.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
 </body>
 </html>
 

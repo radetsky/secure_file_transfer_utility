@@ -41,6 +41,7 @@ function sendFile() {
     };
     setBarWidth(0);
     showProgressBar();
+    setProgressTitle("Sending file...");
 
     cursorRequest.onsuccess = function(event) {
         const cursor = event.target.result;
@@ -78,6 +79,7 @@ function sendFile() {
             console.log('All data read');
             wss.send(`${fileinfo.uuid}|EOF|`);
             setBarWidth(100);
+            hideProgressBar();
         }
     };
 }
@@ -86,11 +88,22 @@ function onMessage(ws, msg) {
     console.debug(`Received message: ${msg}`);
     try {
         const info = JSON.parse(msg);
-        if (info.result !== undefined && info.result === "bob is ready") {
-            if (info.id === getDocumentId()) {
-                sendFile();
+        if (info.result !== undefined) {
+            switch(info.result) {
+                case "bob is ready":
+                    if (info.id === getDocumentId()) {
+                        sendFile();
+                    }
+                    return;
+                case 'ERROR':
+                    console.error("Error: ", info.error);
+                    return;
+                default:
+                    console.error("Invalid result: ", info.result);
+                    return;
             }
-            return;
+        } else {
+            console.error("Invalid message: ", msg);
         }
     } catch (err) {
         console.error(err);
