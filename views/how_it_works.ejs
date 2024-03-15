@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About the Service</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="/jss/bootstrap/colors.js"></script>
+    <script src="/script.js"></script>
+</head>
+<body>
+<%- include('partials/header') %>
+
+<div class="container">
+    <h2 class="pb-2 border-bottom">How it works</h2>
+
+    <div class="d-flex flex-column flex-md-row p-4 gap-4 py-md-5 align-items-center justify-content-center">
+
+        <div class="list-group list-group-checkable d-grid gap-2 border-0">
+          <input class="list-group-item-check pe-none" type="radio" name="listGroupCheckableRadios" id="listGroupCheckableRadios1" value="" checked>
+          <label class="list-group-item rounded-3 py-3" for="listGroupCheckableRadios1">
+            Sender uploads their file to their local browser, not the server.
+            <span class="d-block small opacity-50">File is then split into parts and encrypted. File's name and size sent to the server for our service and counting.</span>
+          </label>
+
+          <input class="list-group-item-check pe-none" type="radio" name="listGroupCheckableRadios" id="listGroupCheckableRadios2" value="">
+          <label class="list-group-item rounded-3 py-3" for="listGroupCheckableRadios2">
+            Sender shares the generated URL with the recipient.
+            <span class="d-block small opacity-50">Recipient visits the URL and receives information about the file.</span>
+          </label>
+
+          <input class="list-group-item-check pe-none" type="radio" name="listGroupCheckableRadios" id="listGroupCheckableRadios3" value="">
+          <label class="list-group-item rounded-3 py-3" for="listGroupCheckableRadios3">
+            Recipient presses the "Receive" button.
+            <span class="d-block small opacity-50">Recipient downloads parts of the file from the Sender's Browser via WebSockets. Our service acts as a switch only.  </span>
+          </label>
+
+          <input class="list-group-item-check pe-none" type="radio" name="listGroupCheckableRadios" id="listGroupCheckableRadios4" value="">
+          <label class="list-group-item rounded-3 py-3" for="listGroupCheckableRadios4">
+            Recipient presses the "Save" button.
+            <span class="d-block small opacity-50">Decrypted file is saved to the recipient's local drive.</span>
+          </label>
+
+        </div>
+    </div>
+    <div class="d-flex flex-column flex-md-row p-4 gap-4 py-md-5 align-items-center justify-content-center">
+        <form action="/sendfile" method="POST">
+            <button class="d-inline-flex align-items-center btn btn-primary btn-lg px-4 rounded-pill" type="submit">
+              Send File
+              <svg class="bi ms-2" width="24" height="24"><use xlink:href="#arrow-right-short"/></svg>
+            </button>
+        </form>
+    </div>
+    <div class="d-flex flex-column flex-md-row p-4 gap-4 py-md-5 align-items-center justify-content-center">
+        <p>Thank you for using our file transfer service!</p>
+    </div>
+</div>
+<%- include('partials/footer') %>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
+</body>
+</html>

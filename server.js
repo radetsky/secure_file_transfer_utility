@@ -45,6 +45,16 @@ app.get('/terms_of_service', (req, res) => {
 app.get('/about', (req, res) => {
     res.render('about');
 });
+app.get('/use_cases', (req, res) => {
+    res.render('use_cases');
+});
+app.get('/features', (req, res) => {
+    res.render('features');
+});
+app.get('/how_it_works', (req, res) => {
+    res.render('how_it_works');
+});
+
 app.get('/receive_page', (req, res) => {
     res.render('receive_page');
 });

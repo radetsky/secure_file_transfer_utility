@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About the Service</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="/jss/bootstrap/colors.js"></script>
+    <script src="/script.js"></script>
+</head>
+<body>
+<%- include('partials/header') %>
+<div class="container">
+    <div class="container px-4 py-5" id="featured-3">
+        <h2 class="pb-2 border-bottom">Use cases</h2>
+        <div class="row g-4 py-5 row-cols-1 row-cols-lg-3">
+          <div class="feature col">
+            <div class="feature-icon d-inline-flex align-items-center justify-content-center text-bg-primary bg-gradient fs-2 mb-3">
+              <svg class="bi" width="1em" height="1em"><use xlink:href="#collection"/></svg>
+            </div>
+            <h3 class="fs-2 text-body-emphasis">Remote work</h3>
+            <h4 class="fs-5">Use instead of file sharing services</h4>
+            <p>Instead of relying on platforms like Google Drive or Dropbox, you can securely share documents online using our service. You can encrypt and decrypt files directly in your browser, ensuring your data stays safe. Whether you're transferring one file or multiple, you can do it all online with our encryption and decryption operations built right into the browser. And remember, we never store the content of your files.</p>
+
+            <form action="/sendfile" method="POST">
+                <button class="d-inline-flex align-items-center btn btn-primary btn-lg px-4 rounded-pill" type="submit">
+                  Send File
+                  <svg class="bi ms-2" width="24" height="24"><use xlink:href="#arrow-right-short"/></svg>
+                </button>
+            </form>
+
+          </div>
+          <div class="feature col">
+            <div class="feature-icon d-inline-flex align-items-center justify-content-center text-bg-primary bg-gradient fs-2 mb-3">
+              <svg class="bi" width="1em" height="1em"><use xlink:href="#people-circle"/></svg>
+            </div>
+            <h3 class="fs-2 text-body-emphasis">Without USB flash drive</h3>
+            <h4 class="fs-5">Share files with friends</h4>
+            <p>You may use our service instead of using a USB flash drive when you're close to your friend but want to securely share files. With our platform, you can easily upload and encrypt files directly in your browser, ensuring privacy and convenience without the risk of losing a physical device.</p>
+            <form action="/sendfile" method="POST">
+                <button class="d-inline-flex align-items-center btn btn-primary btn-lg px-4 rounded-pill" type="submit">
+                  Send File
+                  <svg class="bi ms-2" width="24" height="24"><use xlink:href="#arrow-right-short"/></svg>
+                </button>
+            </form>
+
+          </div>
+          <div class="feature col">
+            <div class="feature-icon d-inline-flex align-items-center justify-content-center text-bg-primary bg-gradient fs-2 mb-3">
+              <svg class="bi" width="1em" height="1em"><use xlink:href="#wifi"/></svg>
+            </div>
+            <h3 class="fs-2 text-body-emphasis">Network Sharing</h3>
+            <h4 class="fs-5">Share files with colleagues in LAN</h4>
+            <p>Easily share files with colleagues on your local area network (LAN) without enabling network and file sharing settings on your computer. Simply transfer files securely using our service, taking advantage of the fast speeds of the modern internet. This ensures a secure and convenient way to share single or multiple files without compromising your computer's settings.</p>
+            <form action="/sendfile" method="POST">
+                <button class="d-inline-flex align-items-center btn btn-primary btn-lg px-4 rounded-pill" type="submit">
+                  Send File
+                  <svg class="bi ms-2" width="24" height="24"><use xlink:href="#arrow-right-short"/></svg>
+                </button>
+            </form>
+          </div>
+        </div>
+      </div>
+</div>
+    <%- include('partials/footer') %>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
+</body>
+</html>
