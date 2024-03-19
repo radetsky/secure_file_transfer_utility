@@ -9,6 +9,7 @@ let fileinfo; // File info to receive { uuid, name, size }
 const chunkSize = 1024 * 1024 * 1; // 1MB chunk size
 
 let masterKey;
+let state = "loading";
 
 document.addEventListener("DOMContentLoaded", function() {
     delete_db();
@@ -54,14 +55,21 @@ function onMessage(ws, msg) {
         if (info.result !== undefined) {
             switch (info.result) {
             case 'OK':
+                state = 'OK';
                 fileinfo = info;
                 showFileInfo();
                 return;
             case 'EOF':
+                if (state === 'ERROR') {
+                    errorMessageBox("Error decrypting data", "The key is invalid. Make sure you have the correct URL and try again.");
+                }
+                state = 'EOF';
                 setTimeout(showSaveBtn, 1000);
                 return;
             case 'ERROR':
+                state = 'ERROR';
                 console.error("Error: ", info.error);
+                errorMessageBox("Error", info.error);
                 return;
             default:
                 console.error("Invalid result: ", info.result);
@@ -82,8 +90,13 @@ function onMessage(ws, msg) {
                 const payload = msg.slice(getDocumentId().length + 10);
                 payload.arrayBuffer().then((buffer1) => {
                     const received_data = new Uint8Array(buffer1);
-                    const decrypted_data = themis.decryptData(masterKey, received_data);
-                    saveChunk(decrypted_data, received_offset);
+                    try {
+                        const decrypted_data = themis.decryptData(masterKey, received_data);
+                        saveChunk(decrypted_data, received_offset);
+                    } catch (err) {
+                        state = 'ERROR';
+                        console.error("Error decrypting data: ", err);
+                    }
                 });
             });
         });
@@ -98,6 +111,7 @@ function open_ws() {
     wss = new WebSocket(`ws://${location.host}`);
     wss.onerror = function () {
         console.error('WebSocket error');
+        errorMessageBox('Error', 'WebSocket error. Please reload the page!')
     };
     wss.onopen = function () {
         console.debug('WebSocket connection established');
@@ -123,6 +137,7 @@ function open_db() {
     dbh = indexedDB.open(dbName, 1);
     dbh.onerror = function(event) {
         console.error("Помилка відкриття бази даних");
+        errorMessageBox("Error", "Error opening the local database. Please, reload the page to try again.");
     };
     dbh.onsuccess = function(event) {
         dbh = event.target.result;
@@ -140,11 +155,13 @@ function saveChunk(data, offset) {
     const tr = dbh.transaction([osName], "readwrite");
     tr.onerror = function(event) {
         console.error("Помилка транзакції");
+        errorMessageBox("Error", "The transaction error occurred during saving file chunk to local database.");
     };
     const os = tr.objectStore(osName);
     const sth = os.add({ id: offset, data: data });
     sth.onerror = function(event) {
         console.error("Помилка збереження шматка файлу у IndexedDB: ", event.target.error);
+        errorMessageBox("Error", "Error saving the file chunk to the local database: " + event.target.error);
     };
     tr.commit();
     setBarWidth(offset / fileinfo.size * 100);

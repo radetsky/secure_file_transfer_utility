@@ -139,7 +139,7 @@ function onGreetingAlice(ws, id) {
 function onGreetingBob(ws, id) {
     const info = map.get(id);
     if (!info) {
-        ws.send(JSON.stringify({result: 'error', message: `unknown id ${id}`}));
+        ws.send(JSON.stringify({result: 'ERROR', error: `unknown id ${id}`}));
         return;
     }
     info.bob = ws;

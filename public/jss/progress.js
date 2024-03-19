@@ -29,3 +29,10 @@ function setProgressTitle(title) {
     document.getElementById('progress-title').textContent = title;
 }
 
+function errorMessageBox(title, body) {
+    document.getElementById('alert-modal-title').textContent = title;
+    document.getElementById('alert-modal-text').textContent = body;
+    const alert_modal = new bootstrap.Modal(document.getElementById('alert-modal'));
+    alert_modal.show();
+
+}

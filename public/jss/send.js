@@ -33,11 +33,13 @@ function sendFile() {
     const tr = dbh.transaction([osName], "readonly");
     tr.onerror = function(event) {
         console.error("Помилка транзакції читання");
+        errorMessageBox("Error", "The read transaction error while sending the file!");
     };
     const os = tr.objectStore(osName);
     const cursorRequest = os.openCursor();
     cursorRequest.onerror = function(event) {
         console.error('Cursor error: ' + event.target.errorCode);
+        errorMessageBox("Error", "The cursor error while sending the file!" + event.target.errorCode);
     };
     setBarWidth(0);
     showProgressBar();
@@ -95,6 +97,9 @@ function onMessage(ws, msg) {
                         sendFile();
                     }
                     return;
+                case 'OK':
+                    console.log("OK:", info.id);
+                    return;
                 case 'ERROR':
                     console.error("Error: ", info.error);
                     return;
@@ -119,6 +124,7 @@ function open_ws() {
     wss = new WebSocket(`ws://${location.host}`);
     wss.onerror = function () {
         console.error('WebSocket error');
+        errorMessageBox("Error", "WebSocket error");
     };
     wss.onopen = function () {
         console.debug('WebSocket connection established');
@@ -143,6 +149,7 @@ function open_db() {
     dbh = indexedDB.open(dbName, 1);
     dbh.onerror = function(event) {
         console.error("Помилка відкриття бази даних");
+        errorMessageBox("Error", "Error opening the local database. Please, reload the page to try again.");
     };
     dbh.onsuccess = function(event) {
         dbh = event.target.result;
@@ -166,12 +173,14 @@ function saveChunk(file, offset) {
         const tr = dbh.transaction([osName], "readwrite");
         tr.onerror = function(event) {
             console.error("Помилка транзакції");
+            errorMessageBox("Error", "The transaction error while saving the file!");
         };
         const os = tr.objectStore(osName);
         const sth = os.add({ id: offset, data: data });
 
         sth.onerror = function(event) {
             console.log("Помилка збереження шматка файлу у IndexedDB");
+            errorMessageBox("Error", "Error saving the file chunk to the local database!");
         };
         sth.onsuccess = function(event) {
             offset += chunkSize;
