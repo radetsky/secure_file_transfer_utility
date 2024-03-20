@@ -33,6 +33,17 @@ const logger = winston.createLogger({
 });
 
 const map = new Map();
+const session_info = {
+    id: null, // copy of the key
+    name: null, // file name
+    size: null, // file size
+    alice: null, // websocket for alice
+    bob: null, // websocket for bob
+    state: {
+        offset: 0,
+    }, // state of the transfer
+}
+
 /* Express */
 
 const app = express();
@@ -60,7 +71,7 @@ app.get('/receive_page', (req, res) => {
 });
 app.post('/sendfile', (req, res) => {
     const id = uuid.v4();
-    map.set(id, { id, name: null, size: null, alice: null, bob: null });
+    map.set(id, {...session_info, id: id});
     res.redirect(`/send/${id}`);
 });
 app.get('/send/:id', (req, res) => {
@@ -73,7 +84,7 @@ app.get('/send/:id', (req, res) => {
     }
     if (info.name !== null) {
         id = uuid.v4();
-        map.set(id, { id, name: null, size: null, alice: null, bob: null });
+        map.set(id, {...session_info, id: id} );
         res.redirect(`/send/${id}`);
         return;
     }
@@ -154,6 +165,16 @@ function onGreetingBob(ws, id) {
     ws.send(JSON.stringify(info2bob));
 }
 
+function whomSocketIs(ws, info) {
+    if (info.alice === ws) {
+        return 'Alice';
+    }
+    if (info.bob === ws) {
+        return 'Bob';
+    }
+    return 'Unknown';
+}
+
 function onMessage(ws, bufferMessage) {
     logger.debug(`Received message: ${bufferMessage.length} bytes`);
     const message = bufferMessage.toString('utf-8');
@@ -172,6 +193,7 @@ function onMessage(ws, bufferMessage) {
         ws.send(`Error: unknown id ${id}`);
         return;
     }
+    const whomSocket = whomSocketIs(ws, info);
     if (parts.length < 3) {
         ws.send(`Error: invalid message`);
         return;
@@ -184,8 +206,8 @@ function onMessage(ws, bufferMessage) {
             info.size = fileinfo.size;
             map.set(id, info);
             insert_encrypted_fileinfo(id, fileinfo.name, fileinfo.size);
-            logger.debug(`File info: ${info.name} (${info.size} bytes)`);
-            ws.send(JSON.stringify({ result: "OK", fileinfo: `${info.name} (${info.size} bytes)` }));
+            logger.debug(`${whomSocket} -> File info: ${info.name} (${info.size} bytes)`);
+            ws.send(JSON.stringify({ result: "OK", id: id, fileinfo: `${info.name} (${info.size} bytes)` }));
         } catch (err) {
             ws.send(`Error: invalid fileinfo`);
             return;
@@ -197,19 +219,38 @@ function onMessage(ws, bufferMessage) {
             id: id,
         };
         info.alice.send(JSON.stringify(info2alice));
-        logger.debug(`Bob is ready: ${id}`);
+        logger.debug(`${whomSocket} -> Bob is ready: ${id}`);
     }
 
-    if (command === 'EOF') {
-        logger.debug(`EOF: ${id}`);
-        insert_transferred_fileinfo(id, info.name, info.size);
-        info.bob.send(JSON.stringify({ result: "EOF" }));
+    if (command === 'RCVD') {
+        const received_offset = parseInt(parts[2]);
+        logger.debug(`${whomSocket} -> Confirmed: ${received_offset} offset`);
+        if (received_offset === info.state['offset']) {
+            info.alice.send(JSON.stringify({ result: "RCVD", offset: received_offset }));
+        }
     }
 
     if (command === 'data') {
-        const data = bufferMessage.slice(id.length + command.length + 2 + 4); //we also have 32-bit offset after the command
-        logger.debug(`Data: ${data.length} bytes`);
-        info.bob.send(bufferMessage);
+        const data_offset = id.length + command.length + 2 + 4;
+        // Message from Alice to Bob. We need to forward it to Bob
+        const data = bufferMessage.slice(data_offset); // we also have 32-bit offset after the command
+        const offset_buf = bufferMessage.slice(id.length + command.length + 2, data_offset);
+        const offset = offset_buf.readUInt32LE(0);
+
+        logger.debug(`${whomSocket} -> Data: ${data.length} bytes at offset ${offset}`);
+        if (info.bob !== null) {
+            info.bob.send(bufferMessage);
+            info.state['offset'] = offset;
+        } else {
+            logger.error(`Bob is not ready: ${id}`);
+            info.alice.send(JSON.stringify({ result: "Error", error: "Bob is not ready" }));
+        }
+    }
+
+    if (command === 'EOF') {
+        logger.debug(`${whomSocket} -> EOF: ${id}`);
+        insert_transferred_fileinfo(id, info.name, info.size);
+        info.bob.send(JSON.stringify({ result: "EOF" }));
     }
 }
 

@@ -81,6 +81,7 @@ function onMessage(ws, msg) {
         id_buf.text().then((id) => {
             if (id !== getDocumentId()) {
                 console.error("Invalid document id:", id);
+                errorMessageBox("Error", "Invalid document id. Please, reload the page to try again.");
                 return;
             }
             const offset_blob = msg.slice(getDocumentId().length + 6, getDocumentId().length + 10);
@@ -93,9 +94,11 @@ function onMessage(ws, msg) {
                     try {
                         const decrypted_data = themis.decryptData(masterKey, received_data);
                         saveChunk(decrypted_data, received_offset);
+                        wss.send(`${id}|RCVD|${received_offset}`);
                     } catch (err) {
                         state = 'ERROR';
                         console.error("Error decrypting data: ", err);
+                        errorMessageBox("Error decrypting data", "The key is invalid. Make sure you have the correct URL and try again.");
                     }
                 });
             });
@@ -122,7 +125,7 @@ function open_ws() {
         wss = null;
     };
     wss.onmessage = function (event) {
-        console.debug(`Received message: ${event.data}`);
+        console.debug(`Received message: ${event.data.length} bytes`);
         onMessage(wss, event.data);
     };
     return wss;
@@ -177,7 +180,7 @@ function ready_to_saveFile() {
     request.onsuccess = function(event) {
         const cursor = event.target.result;
         if (cursor) {
-            console.log(cursor.value);
+            // console.log(cursor.value);
             listOfBlobs.push(cursor.value.data);
             setBarWidth(cursor.value.id / fileinfo.size * 100);
             cursor.continue();

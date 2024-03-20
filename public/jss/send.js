@@ -7,6 +7,11 @@ let fileinfo; // File info to send { uuid, name, size }
 const greeting = "I am Alice!";
 
 let masterKey;
+let state = {
+    sent_offset: 0,
+    confirmed_offset: 0,
+    offset_lists: [],
+}
 
 document.addEventListener("DOMContentLoaded", function() {
     delete_db();
@@ -29,61 +34,56 @@ function send_greeting() {
     wss.send(`${greeting}|${id}`);
 }
 
-function sendFile() {
+function sendChunk(read_offset) {
+    if (read_offset === undefined) {
+        sendEOF();
+        return;
+    }
     const tr = dbh.transaction([osName], "readonly");
-    tr.onerror = function(event) {
+    tr.onerror = function (event) {
         console.error("Помилка транзакції читання");
         errorMessageBox("Error", "The read transaction error while sending the file!");
     };
     const os = tr.objectStore(osName);
-    const cursorRequest = os.openCursor();
-    cursorRequest.onerror = function(event) {
-        console.error('Cursor error: ' + event.target.errorCode);
-        errorMessageBox("Error", "The cursor error while sending the file!" + event.target.errorCode);
-    };
+    const dbreq = os.get(read_offset);
+    dbreq.onerror = function (event) {
+        console.error("Помилка читання шматка файлу з IndexedDB");
+        errorMessageBox("Error", "Error reading the file chunk from the local database!");
+    }
+    dbreq.onsuccess = function (event) {
+        if (!dbreq.result) {
+            sendEOF();
+            return;
+        }
+        const id = new TextEncoder().encode(getDocumentId());
+        const command = new TextEncoder().encode("|data|");
+        const offset_buf = new ArrayBuffer(4);
+        const offset_view = new DataView(offset_buf);
+        offset_view.setUint32(0, read_offset, true);
+        const data = new Uint8Array(dbreq.result.data);
+        const msg = new Uint8Array(id.length + command.length + offset_buf.byteLength + data.byteLength);
+        msg.set(id, 0); // Copy id to msg
+        msg.set(command, id.length); // Copy command to msg after id
+        msg.set(new Uint8Array(offset_buf), id.length + command.length); // Copy offset to msg after command
+        msg.set(data, id.length + command.length + 4); // Copy data to msg after command
+        wss.send(msg);
+        state.sent_offset = read_offset;
+        setBarWidth((read_offset + data.byteLength) / fileinfo.size * 100);
+    }
+}
+
+function sendEOF() {
+    console.debug('All data read');
+    wss.send(`${fileinfo.uuid}|EOF|`);
+    setBarWidth(100);
+    hideProgressBar();
+}
+
+function sendFile() {
     setBarWidth(0);
     showProgressBar();
     setProgressTitle("Sending file...");
-
-    cursorRequest.onsuccess = function(event) {
-        const cursor = event.target.result;
-        if (cursor) {
-            // Handle each record (cursor.value) here
-            const result = cursor.value;
-            if ( result.id === undefined ) {
-                console.error('Invalid record: offset is undefined');
-                return;
-            }
-            if ( result.data === undefined ) {
-                console.error('Invalid record: data is undefined');
-                return;
-            }
-            // Assuming getDocumentId() returns a string
-            const id = new TextEncoder().encode(getDocumentId());
-            const command = new TextEncoder().encode("|data|");
-            const offset_buf = new ArrayBuffer(4);
-            const offset_view = new DataView(offset_buf);
-            offset_view.setUint32(0, result.id, true);
-
-            const data = new Uint8Array(result.data);
-
-            // Assuming data is already a Uint8Array
-            const msg = new Uint8Array(id.length + command.length + 4 + data.byteLength);
-            msg.set(id, 0); // Copy id to msg
-            msg.set(command, id.length); // Copy command to msg after id
-            msg.set(new Uint8Array(offset_buf), id.length + command.length); // Copy offset to msg after command
-            msg.set(data, id.length + command.length + 4); // Copy data to msg after command
-            wss.send(msg);
-            setBarWidth(result.id / fileinfo.size * 100);
-            cursor.continue();
-        } else {
-          // No more data
-            console.log('All data read');
-            wss.send(`${fileinfo.uuid}|EOF|`);
-            setBarWidth(100);
-            hideProgressBar();
-        }
-    };
+    sendChunk(state.offset_lists.shift());
 }
 
 function onMessage(ws, msg) {
@@ -102,6 +102,14 @@ function onMessage(ws, msg) {
                     return;
                 case 'ERROR':
                     console.error("Error: ", info.error);
+                    return;
+                case 'RCVD':
+                    console.log("Confirmed offset: ", info.offset);
+                    state.confirmed_offset = info.offset;
+                    console.log(state);
+                    if (state.sent_offset === state.confirmed_offset) {
+                        sendChunk(state.offset_lists.shift());
+                    }
                     return;
                 default:
                     console.error("Invalid result: ", info.result);
@@ -182,7 +190,8 @@ function saveChunk(file, offset) {
             console.log("Помилка збереження шматка файлу у IndexedDB");
             errorMessageBox("Error", "Error saving the file chunk to the local database!");
         };
-        sth.onsuccess = function(event) {
+        sth.onsuccess = function (event) {
+            state.offset_lists.push(offset); // store to the list of offsets
             offset += chunkSize;
             setBarWidth(offset / fileinfo.size * 100);
             if (offset < file.size) {
