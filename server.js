@@ -105,6 +105,22 @@ app.get('/receive/:id/:key', (req, res) => {
     }
     res.render('receivefile', { id, key });
 });
+app.get('/status/admin', (req, res) => {
+    // return JSON of map
+    const status = [];
+    for (const [key, value] of map.entries()) {
+        if (value.alice !== null) {
+            value.alice = 'connected';
+        }
+        if (value.bob !== null) {
+            value.bob = 'connected';
+        }
+        status.push(value);
+    }
+
+    res.json(status);
+});
+
 app.get('/', (req, res) => {
     res.render('index');
 });
