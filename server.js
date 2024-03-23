@@ -301,6 +301,22 @@ wss.on('connection', function (ws, req) {
                 map.delete(key);
                 logger.debug(`Deleted map entry ${key}`);
             }
+            if (value.alice === ws && value.bob !== null) {
+                value.bob.send(JSON.stringify({
+                    result: "ERROR",
+                    error: "The sender has ended the connection. Please wait for them to send a new URL."
+                }));
+                map.delete(key);
+                logger.debug(`Deleted map entry ${key}`);
+            }
+            if (value.bob === ws) {
+                value.alice.send(JSON.stringify({
+                    result: "ERROR",
+                    error: "Recepient has ended the connection."
+                }));
+                map.delete(key);
+                logger.debug(`Deleted map entry ${key}`);
+            }
         }
     });
 });

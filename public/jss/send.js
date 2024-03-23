@@ -102,6 +102,7 @@ function onMessage(ws, msg) {
                     return;
                 case 'ERROR':
                     console.error("Error: ", info.error);
+                    errorMessageBox("Error", info.error);
                     return;
                 case 'RCVD':
                     console.log("Confirmed offset: ", info.offset);
