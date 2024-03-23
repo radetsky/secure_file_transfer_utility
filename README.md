@@ -19,7 +19,10 @@ psql -U test -h 127.0.0.1 secure_files
 ```
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt-get install -y nodejs
-sudo apt-get install npm
+```
+
+## npm is already installed with new nodejs
+```
 npm install -g yarn
 ```
 

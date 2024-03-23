@@ -38,7 +38,9 @@ const session_info = {
     name: null, // file name
     size: null, // file size
     alice: null, // websocket for alice
+    alice_ip: null, // IP address of Alice
     bob: null, // websocket for bob
+    bob_ip: null, // IP address of Bob
     state: {
         offset: 0,
     }, // state of the transfer
@@ -112,17 +114,19 @@ app.use((req, res, next) => {
 });
 
 /* Database */
-function insert_encrypted_fileinfo(uuid, name, size) {
-    db.none('INSERT INTO encrypted_files(uuid, name, size) VALUES($1, $2, $3)', [uuid, name, size]).catch((err) => {
+function insert_encrypted_fileinfo(uuid, name, size, ip) {
+    db.none('INSERT INTO encrypted_files(uuid, name, size, ip_address) VALUES($1, $2, $3, $4)',
+        [uuid, name, size, ip]).catch((err) => {
         logger.error(`Error inserting encrypted file info: ${err}`);
     });
 }
-function insert_transferred_fileinfo(uuid, name, size) {
-    db.none('INSERT INTO transferred_files(uuid, name, size) VALUES($1, $2, $3)', [uuid, name, size]).catch((err) => {
+function insert_transferred_fileinfo(enc_uuid, name, size, ip) {
+    const id = uuid.v4();
+    db.none('INSERT INTO transferred_files(uuid, encrypted_uuid, name, size, ip_address) VALUES($1, $2, $3, $4, $5)',
+        [id, enc_uuid, name, size, ip]).catch((err) => {
         logger.error(`Error inserting transferred file info: ${err}`);
     });
 }
-
 
 /* WebSocket server */
 logger.info("Starting server...");
@@ -135,27 +139,44 @@ function onSocketError(err) {
     logger.error(`Socket error: ${err}`);
 }
 
-function onGreetingAlice(ws, id) {
+function remoteIp(req) {
+    let remoteIp;
+    if (req.headers['cf-connecting-ip']) {
+        // If the request was proxied through Cloudflare
+        remoteIp = req.headers['cf-connecting-ip'];
+    } else if (req.headers['x-forwarded-for']) {
+        // If the request was proxied through another proxy
+        remoteIp = req.headers['x-forwarded-for'].split(',')[0].trim();
+    } else {
+        // Otherwise, use the default remote address
+        remoteIp = req.connection.remoteAddress;
+    }
+    return remoteIp;
+}
+
+function onGreetingAlice(ws, id, ip) {
     const info = map.get(id);
     if (!info) {
         ws.send(`Error: unknown id ${id}`);
         return;
     }
     info.alice = ws;
+    info.alice_ip = ip;
     map.set(id, info);
-    logger.info(`Hello, Alice: ${id}`);
+    logger.info(`Hello, Alice: ${id} from ${ip}`);
     ws.send(JSON.stringify({ result: "OK", id: id }));
 }
 
-function onGreetingBob(ws, id) {
+function onGreetingBob(ws, id, ip) {
     const info = map.get(id);
     if (!info) {
         ws.send(JSON.stringify({result: 'ERROR', error: `unknown id ${id}`}));
         return;
     }
     info.bob = ws;
+    info.bob_ip = ip;
     map.set(id, info);
-    logger.info(`Hello, Bob: ${id}`);
+    logger.info(`Hello, Bob: ${id} from ${ip}`);
     const info2bob = {
         result: "OK",
         uuid: info.id,
@@ -175,15 +196,15 @@ function whomSocketIs(ws, info) {
     return 'Unknown';
 }
 
-function onMessage(ws, bufferMessage) {
-    logger.debug(`Received message: ${bufferMessage.length} bytes`);
+function onMessage(ws, bufferMessage, remote_ip) {
+    logger.debug(`Received message: ${bufferMessage.length} bytes from ${remote_ip}`);
     const message = bufferMessage.toString('utf-8');
     if (message.startsWith(greetingAlice)) {
-        onGreetingAlice(ws, message.slice(greetingAlice.length + 1));
+        onGreetingAlice(ws, message.slice(greetingAlice.length + 1), remote_ip);
         return;
     }
     if (message.startsWith(greetingBob)) {
-        onGreetingBob(ws, message.slice(greetingBob.length + 1));
+        onGreetingBob(ws, message.slice(greetingBob.length + 1), remote_ip);
         return;
     }
     const parts = message.split('|');
@@ -205,10 +226,11 @@ function onMessage(ws, bufferMessage) {
             info.name = fileinfo.name;
             info.size = fileinfo.size;
             map.set(id, info);
-            insert_encrypted_fileinfo(id, fileinfo.name, fileinfo.size);
+            insert_encrypted_fileinfo(id, fileinfo.name, fileinfo.size, info.alice_ip);
             logger.debug(`${whomSocket} -> File info: ${info.name} (${info.size} bytes)`);
             ws.send(JSON.stringify({ result: "OK", id: id, fileinfo: `${info.name} (${info.size} bytes)` }));
         } catch (err) {
+            logger.error(`Error parsing fileinfo: ${err}`);
             ws.send(`Error: invalid fileinfo`);
             return;
         }
@@ -249,7 +271,7 @@ function onMessage(ws, bufferMessage) {
 
     if (command === 'EOF') {
         logger.debug(`${whomSocket} -> EOF: ${id}`);
-        insert_transferred_fileinfo(id, info.name, info.size);
+        insert_transferred_fileinfo(id, info.name, info.size, info.bob_ip);
         info.bob.send(JSON.stringify({ result: "EOF" }));
     }
 }
@@ -262,15 +284,16 @@ server.on('upgrade', function (request, socket, head) {
     });
 });
 
-wss.on('connection', function (ws, request) {
+wss.on('connection', function (ws, req) {
+    const remote_ip = remoteIp(req);
     ws.on('open', function () {
-        logger.debug('WebSocket connection established');
+        logger.debug('WebSocket connection established from' + remote_ip);
     })
     ws.on('message', function (message) {
-        onMessage(ws, message);
+        onMessage(ws, message, remote_ip);
     });
     ws.on('close', function () {
-        logger.debug('WebSocket was closed');
+        logger.debug('WebSocket was closed by' + remote_ip);
         for (const [key, value] of map.entries()) {
             if (value.alice === ws && value.name !== null) {
                 map.delete(key);
