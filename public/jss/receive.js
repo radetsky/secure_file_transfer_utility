@@ -170,17 +170,17 @@ function saveChunk(data, offset) {
     setBarWidth(offset / fileinfo.size * 100);
 }
 
-function ready_to_saveFile() {
+function saveFileToFS() {
     const tr = dbh.transaction([osName], "readonly");
     const os = tr.objectStore(osName);
     const request = os.openCursor();
     let listOfBlobs = [];
     setBarWidth(0);
     showProgressBar();
+    setProgressTitle('Saving file to your computer...');
     request.onsuccess = function(event) {
         const cursor = event.target.result;
         if (cursor) {
-            // console.log(cursor.value);
             listOfBlobs.push(cursor.value.data);
             setBarWidth(cursor.value.id / fileinfo.size * 100);
             cursor.continue();

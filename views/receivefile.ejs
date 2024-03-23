@@ -22,7 +22,7 @@
         </div>
         <div id="uuid" style="display: none;"><%= id %></div>
         <button class="btn btn-primary btn-lg px-4 gap-3" onclick="ready_to_receiveFile('<%= id %>')" id="receiveFileBtn">Receive and decrypt</button>
-        <button class="btn btn-primary btn-lg px-4 gap-3 mt-5" onclick="ready_to_saveFile()" id="saveFileBtn" style="display: none;">Save File</button>
+        <button class="btn btn-primary btn-lg px-4 gap-3 mt-5" onclick="saveFileToFS()" id="saveFileBtn" style="display: none;">Save File</button>
         <div class="mt-4 col-lg-9 mx-auto" id="encryption_key_table">
             <table class="table col-lg-9" >
                 <caption>The key is used to decrypt the file</caption>
@@ -44,7 +44,7 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h4 class="modal-title">Receiving and decrypting the file</h4>
+                    <h4 class="modal-title" id="progress-title">Receiving and decrypting the file</h4>
                 </div>
                 <div class="modal-body">
                     <div class="progress" role="progressbar" aria-label="Encryption progress" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">

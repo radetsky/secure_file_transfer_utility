@@ -273,6 +273,8 @@ function onMessage(ws, bufferMessage, remote_ip) {
         logger.debug(`${whomSocket} -> EOF: ${id}`);
         insert_transferred_fileinfo(id, info.name, info.size, info.bob_ip);
         info.bob.send(JSON.stringify({ result: "EOF" }));
+        // remove the session info
+        map.delete(id);
     }
 }
 
