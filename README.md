@@ -23,7 +23,7 @@ sudo apt-get install -y nodejs
 
 ## npm is already installed with new nodejs
 ```
-npm install -g yarn
+npm install -g yarn terser
 ```
 
 ## Deploy dev

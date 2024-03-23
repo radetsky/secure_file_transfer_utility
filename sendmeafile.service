@@ -1,0 +1,28 @@
+[Unit]
+Description=SendMeAFile
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/node /home/rad/git/sendmeafile/server.js
+WorkingDirectory=/home/rad/git/sendmeafile
+
+User=nobody
+Group=nogroup
+
+# Environment variables:
+Environment=NODE_ENV=production
+Environment=PGDB=postgres://smaf:1CS2t9JglRwgNTjK@127.0.0.1:5432/secure_files
+
+# Allow many incoming connections
+LimitNOFILE=infinity
+
+# Allow core dumps for debugging
+LimitCORE=infinity
+
+StandardInput=null
+StandardOutput=syslog
+StandardError=syslog
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
