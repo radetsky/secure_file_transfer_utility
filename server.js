@@ -78,7 +78,8 @@ app.post('/sendfile', (req, res) => {
 });
 app.get('/send/:id', (req, res) => {
     let id = req.params.id;
-    const receive_url = `${req.protocol}://${req.get('host')}/receive/${id}`
+    const proto = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+    const receive_url = `${proto}://${req.get('host')}/receive/${id}`
     const info = map.get(id);
     if (!info) {
         res.status(404).sendFile(page404);

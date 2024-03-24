@@ -161,7 +161,8 @@ function open_ws() {
         wss.onerror = ws.onopen = ws.onclose = null;
         wss.close();
     }
-    wss = new WebSocket(`ws://${location.host}`);
+    const wsproto = location.protocol === 'https:' ? 'wss' : 'ws';
+    wss = new WebSocket(`${wsproto}://${location.host}`);
     wss.onerror = function () {
         console.error('WebSocket error');
         errorMessageBox("Error", "WebSocket error");

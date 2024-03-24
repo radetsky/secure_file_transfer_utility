@@ -70,10 +70,17 @@
     </div>
 
     <%- include('partials/footer') %>
+    <script src="/bs/bootstrap.min.js" ></script>
+
+    <% if (process.env.NODE_ENV === 'production') { %>
+    <script src="/jss/receive.min.js"></script>
+    <script src="/jss/progress.min.js"></script>
+    <script src="/jss/main.min.js"></script>
+<% } else { %>
     <script src="/jss/receive.js"></script>
     <script src="/jss/progress.js"></script>
     <script src="/jss/main.js"></script>
-    <script src="/bs/bootstrap.min.js" ></script>
+<% } %>
 
 </body>
 </html>
