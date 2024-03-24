@@ -18,6 +18,7 @@ document.addEventListener("DOMContentLoaded", function() {
     dbh = open_db();
     wss = open_ws();
     setBarWidth(0);
+    setProgressDetails(0, 0);
     hideProgressBar();
     themis.init().then(() => {
         masterKey = themis.masterKey();
@@ -35,6 +36,14 @@ function send_greeting() {
 }
 
 function sendChunk(read_offset) {
+    if (progress_cancelled) {
+        sendEOF(false); // cancel
+        console.log("Відправка файлу скасована");
+        document.getElementById('upload_cancelled').style.display = 'block';
+        document.getElementById('fileInfo').style.display = 'none';
+        document.getElementById('receive_url_table').style.display = 'none';
+        return;
+    }
     if (read_offset === undefined) {
         sendEOF();
         return;
@@ -69,18 +78,28 @@ function sendChunk(read_offset) {
         wss.send(msg);
         state.sent_offset = read_offset;
         setBarWidth((read_offset + data.byteLength) / fileinfo.size * 100);
+        setProgressDetails(read_offset + data.byteLength, fileinfo.size);
+
     }
 }
 
-function sendEOF() {
-    console.debug('All data read');
-    wss.send(`${fileinfo.uuid}|EOF|`);
-    setBarWidth(100);
-    hideProgressBar();
+function sendEOF(EOF = true) {
+    if (EOF) {
+        console.debug('All data read');
+        wss.send(`${fileinfo.uuid}|EOF|`);
+        setBarWidth(100);
+        setProgressDetails(fileinfo.size, fileinfo.size);
+        hideProgressBar();
+    } else {
+        console.debug('Sending CANCEL');
+        wss.send(`${fileinfo.uuid}|CANCEL|`);
+        hideProgressBar();
+    }
 }
 
 function sendFile() {
     setBarWidth(0);
+    setProgressDetails(0, fileinfo.size);
     showProgressBar();
     setProgressTitle("Sending file...");
     sendChunk(state.offset_lists.shift());
@@ -104,6 +123,14 @@ function onMessage(ws, msg) {
                     console.error("Error: ", info.error);
                     errorMessageBox("Error", info.error);
                     return;
+                case 'CANCEL':
+                    console.log("CANCELLED");
+                    hideProgressBar();
+                    errorMessageBox("Error", "The file upload was cancelled by the recipient.");
+                    document.getElementById('upload_cancelled').style.display = 'block';
+                    document.getElementById('fileInfo').style.display = 'none';
+                    document.getElementById('receive_url_table').style.display = 'none';
+                    return;
                 case 'RCVD':
                     console.log("Confirmed offset: ", info.offset);
                     state.confirmed_offset = info.offset;
@@ -125,6 +152,10 @@ function onMessage(ws, msg) {
     }
 }
 
+function pingServer() {
+    wss.send(`${fileinfo.uuid}|PING|`);
+}
+
 function open_ws() {
     if (wss) {
         wss.onerror = ws.onopen = ws.onclose = null;
@@ -138,6 +169,7 @@ function open_ws() {
     wss.onopen = function () {
         console.debug('WebSocket connection established');
         send_greeting();
+        setInterval(pingServer, 10 * 1000);
     };
     wss.onclose = function () {
         console.debug('WebSocket connection closed');
@@ -192,9 +224,17 @@ function saveChunk(file, offset) {
             errorMessageBox("Error", "Error saving the file chunk to the local database!");
         };
         sth.onsuccess = function (event) {
+            if (progress_cancelled) {
+                console.log("Завантаження файлу скасовано");
+                hideProgressBar();
+                document.getElementById('encryption_cancelled').style.display = 'block';
+                document.getElementById('fileInfo').style.display = 'none';
+                return;
+            }
             state.offset_lists.push(offset); // store to the list of offsets
             offset += chunkSize;
             setBarWidth(offset / fileinfo.size * 100);
+            setProgressDetails(offset, fileinfo.size);
             if (offset < file.size) {
                 saveChunk(file, offset);
             } else {

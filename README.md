@@ -4,7 +4,7 @@
 ## PostgreSQL ubuntu
 ```
 apt update
-apt install postgresql
+apt install postgresql net-tools
 sudo -i -u postgres
 psql
 CREATE USER test with password 'test';

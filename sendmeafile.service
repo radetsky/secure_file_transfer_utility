@@ -3,7 +3,7 @@ Description=SendMeAFile
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/node /home/rad/git/sendmeafile/server.js
+ExecStart=/usr/bin/node /home/rad/git/sendmeafile/server.js
 WorkingDirectory=/home/rad/git/sendmeafile
 
 User=nobody

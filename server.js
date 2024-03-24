@@ -292,6 +292,24 @@ function onMessage(ws, bufferMessage, remote_ip) {
         // remove the session info
         map.delete(id);
     }
+
+    if (command === 'CANCEL') {
+        logger.debug(`${whomSocket} -> CANCEL: ${id}`);
+        if (whomSocket === 'Alice') {
+            if (info.bob !== null) {
+                info.bob.send(JSON.stringify({ result: "CANCEL" }));
+            }
+        } else {
+            if (info.alice !== null) {
+                info.alice.send(JSON.stringify({ result: "CANCEL" }));
+            }
+        }
+        map.delete(id);
+    }
+
+    if (command === "PING") {
+        logger.debug(`${whomSocket} -> PING: ${id}`);
+    }
 }
 
 server.on('upgrade', function (request, socket, head) {
@@ -311,25 +329,31 @@ wss.on('connection', function (ws, req) {
         onMessage(ws, message, remote_ip);
     });
     ws.on('close', function () {
-        logger.debug('WebSocket was closed by' + remote_ip);
+        logger.debug('WebSocket was closed by ' + remote_ip);
         for (const [key, value] of map.entries()) {
-            if (value.alice === ws && value.name !== null) {
-                map.delete(key);
-                logger.debug(`Deleted map entry ${key}`);
-            }
-            if (value.alice === ws && value.bob !== null) {
-                value.bob.send(JSON.stringify({
-                    result: "ERROR",
-                    error: "The sender has ended the connection. Please wait for them to send a new URL."
-                }));
+            if (value.alice === ws) {
+                if (value.bob !== null) {
+                    try {
+                        value.bob.send(JSON.stringify({
+                            result: "ERROR",
+                            error: "The sender has ended the connection. Please wait for them to send a new URL."
+                        }));
+                    } catch (err) {
+                        logger.error(`Error sending message to Bob: ${err}`);
+                    }
+                }
                 map.delete(key);
                 logger.debug(`Deleted map entry ${key}`);
             }
             if (value.bob === ws) {
-                value.alice.send(JSON.stringify({
-                    result: "ERROR",
-                    error: "Recepient has ended the connection."
-                }));
+                try {
+                    value.alice.send(JSON.stringify({
+                        result: "ERROR",
+                        error: "Recepient has ended the connection."
+                    }));
+                } catch (err) {
+                    logger.error(`Error sending message to Alice: ${err}`);
+                }
                 map.delete(key);
                 logger.debug(`Deleted map entry ${key}`);
             }

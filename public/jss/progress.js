@@ -1,4 +1,9 @@
 let modal_progress;
+let progress_cancelled = false;
+
+function cancelProgress() {
+    progress_cancelled = true;
+}
 
 function setBarWidth(width) {
     let progress = Math.round(width * 100) / 100;
@@ -10,6 +15,11 @@ function setBarWidth(width) {
     bar.innerHTML = progress + '%';
 }
 
+function setProgressDetails(bytes_done, bytes_total) {
+    const details = document.getElementById("progress-details");
+    details.textContent = `${bytes_done} / ${bytes_total} bytes`;
+}
+
 function showProgressBar() {
     if (!modal_progress) {
         modal_progress = new bootstrap.Modal('#progress-modal', {
@@ -17,6 +27,7 @@ function showProgressBar() {
         });
     }
     modal_progress.show();
+    progress_cancelled = false;
 }
 
 function hideProgressBar() {
