@@ -153,7 +153,9 @@ function onMessage(ws, msg) {
 }
 
 function pingServer() {
-    wss.send(`${fileinfo?.uuid}|PING|`);
+    if (wss) {
+        wss.send(`${fileinfo?.uuid}|PING|`);
+    }
 }
 
 function open_ws() {
@@ -247,11 +249,9 @@ function saveChunk(file, offset) {
                 console.log("Файл повністю завантажено у IndexedDB");
                 let receiveUrl = document.getElementById('receive_url').textContent.trim();
                 receiveUrl = receiveUrl + '/' + document.getElementById('masterKey').textContent;
-                console.log("Отримайте файл за посиланням: ", receiveUrl);
                 document.getElementById('receive_url').textContent = receiveUrl;
                 document.getElementById('receive_url').style.display = 'block';
                 hideProgressBar();
-                console.log("hideProgressBar")
                 document.getElementById('encryption_key_table').style.display = 'none';
                 document.getElementById('receive_url_table').style.display = 'block';
             }
