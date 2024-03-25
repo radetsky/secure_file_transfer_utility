@@ -143,8 +143,10 @@ function open_ws() {
         wss = null;
     };
     wss.onmessage = function (event) {
-        console.debug(`Received message: ${event.data.length} bytes`);
-        onMessage(wss, event.data);
+        if (event.data) {
+            console.debug(`Received message: ${event.data.length} bytes`);
+            onMessage(wss, event.data);
+        }
     };
     return wss;
 }

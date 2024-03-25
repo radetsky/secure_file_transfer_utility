@@ -10,8 +10,9 @@ const db = pgp(process.env.PGDB)
 const express = require('express');
 const http = require('http');
 const uuid = require('uuid');
-const { WebSocketServer } = require('ws');
+const { WebSocketServer, WebSocket } = require('ws');
 const winston = require("winston");
+const { clear } = require('console');
 
 const greetingAlice = "I am Alice!";
 const greetingBob = "I am Bob!";
@@ -33,6 +34,23 @@ const logger = winston.createLogger({
 });
 
 const map = new Map();
+setInterval(() => {
+    for (const [key, value] of map.entries()) {
+        if (value.alice?.readyState === WebSocket.CLOSED) {
+            value.alice = null;
+        }
+        if (value.bob?.readyState === WebSocket.CLOSED) {
+            value.bob = null;
+        }
+        if (value.alice === null && value.bob === null) {
+            logger.debug(`Removing ${key} from the map`);
+            map.delete(key);
+        } else {
+            map.set(key, value);
+        }
+    }
+}, 10 * 1000);
+
 const session_info = {
     id: null, // copy of the key
     name: null, // file name
@@ -110,15 +128,15 @@ app.get('/status/admin', (req, res) => {
     // return JSON of map
     const status = [];
     for (const [key, value] of map.entries()) {
+        let new_value = {...value};
         if (value.alice !== null) {
-            value.alice = 'connected';
+            new_value.alice = 'connected';
         }
         if (value.bob !== null) {
-            value.bob = 'connected';
+            new_value.bob = 'connected';
         }
-        status.push(value);
+        status.push(new_value);
     }
-
     res.json(status);
 });
 
@@ -295,8 +313,7 @@ function onMessage(ws, bufferMessage, remote_ip) {
         logger.debug(`${whomSocket} -> EOF: ${id}`);
         insert_transferred_fileinfo(id, info.name, info.size, info.bob_ip);
         info.bob.send(JSON.stringify({ result: "EOF" }));
-        // remove the session info
-        map.delete(id);
+        info.state['offset'] = -1;
     }
 
     if (command === 'CANCEL') {
@@ -310,9 +327,7 @@ function onMessage(ws, bufferMessage, remote_ip) {
                 info.alice.send(JSON.stringify({ result: "CANCEL" }));
             }
         }
-        map.delete(id);
     }
-
     if (command === "PING") {
         logger.debug(`${whomSocket} -> PING: ${id}`);
     }
@@ -337,7 +352,7 @@ wss.on('connection', function (ws, req) {
     ws.on('close', function () {
         logger.debug('WebSocket was closed by ' + remote_ip);
         for (const [key, value] of map.entries()) {
-            if (value.alice === ws) {
+            if (value.alice === ws || value.alice?.readyState === WebSocket.CLOSED) {
                 if (value.bob !== null) {
                     try {
                         value.bob.send(JSON.stringify({
@@ -348,10 +363,11 @@ wss.on('connection', function (ws, req) {
                         logger.error(`Error sending message to Bob: ${err}`);
                     }
                 }
-                map.delete(key);
-                logger.debug(`Deleted map entry ${key}`);
+                value.alice = null;
+                value.alice_ip = null;
+                map.set(key, value);
             }
-            if (value.bob === ws) {
+            if (value.bob === ws || value.bob?.readyState === WebSocket.CLOSED) {
                 try {
                     value.alice.send(JSON.stringify({
                         result: "ERROR",
@@ -360,8 +376,9 @@ wss.on('connection', function (ws, req) {
                 } catch (err) {
                     logger.error(`Error sending message to Alice: ${err}`);
                 }
-                map.delete(key);
-                logger.debug(`Deleted map entry ${key}`);
+                value.bob = null;
+                value.bob_ip = null;
+                map.set(key, value);
             }
         }
     });
