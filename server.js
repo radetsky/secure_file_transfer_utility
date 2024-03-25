@@ -354,13 +354,15 @@ wss.on('connection', function (ws, req) {
         for (const [key, value] of map.entries()) {
             if (value.alice === ws || value.alice?.readyState === WebSocket.CLOSED) {
                 if (value.bob !== null) {
-                    try {
-                        value.bob.send(JSON.stringify({
-                            result: "ERROR",
-                            error: "The sender has ended the connection. Please wait for them to send a new URL."
-                        }));
-                    } catch (err) {
-                        logger.error(`Error sending message to Bob: ${err}`);
+                    if (value.bob !== null) {
+                        try {
+                            value.bob.send(JSON.stringify({
+                                result: "ERROR",
+                                error: "The sender has ended the connection. Please wait for them to send a new URL."
+                            }));
+                        } catch (err) {
+                            logger.error(`Error sending message to Bob: ${err}`);
+                        }
                     }
                 }
                 value.alice = null;
@@ -368,13 +370,15 @@ wss.on('connection', function (ws, req) {
                 map.set(key, value);
             }
             if (value.bob === ws || value.bob?.readyState === WebSocket.CLOSED) {
-                try {
-                    value.alice.send(JSON.stringify({
-                        result: "ERROR",
-                        error: "Recepient has ended the connection."
-                    }));
-                } catch (err) {
-                    logger.error(`Error sending message to Alice: ${err}`);
+                if (value.alice !== null) {
+                    try {
+                        value.alice.send(JSON.stringify({
+                            result: "ERROR",
+                            error: "Recepient has ended the connection."
+                        }));
+                    } catch (err) {
+                        logger.error(`Error sending message to Alice: ${err}`);
+                    }
                 }
                 value.bob = null;
                 value.bob_ip = null;
