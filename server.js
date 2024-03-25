@@ -228,12 +228,17 @@ function onMessage(ws, bufferMessage, remote_ip) {
     const id = parts[0];
     const info = map.get(id);
     if (!info) {
-        ws.send(`Error: unknown id ${id}`);
+        if (id === 'undefined' && parts[1] === 'PING') {
+            logger.debug(`Ping received from ${remote_ip}`);
+            return;
+        }
+        ws.send(JSON.stringify({ result: "ERROR", error: `unknown id ${id}` }));
         return;
     }
     const whomSocket = whomSocketIs(ws, info);
     if (parts.length < 3) {
-        ws.send(`Error: invalid message`);
+        logger.error(`Invalid message: ${message} from ${remote_ip}`);
+        ws.send(JSON.stringify({ result: "ERROR", error: "invalid message" }));
         return;
     }
     const command = parts[1];
@@ -248,7 +253,7 @@ function onMessage(ws, bufferMessage, remote_ip) {
             ws.send(JSON.stringify({ result: "OK", id: id, fileinfo: `${info.name} (${info.size} bytes)` }));
         } catch (err) {
             logger.error(`Error parsing fileinfo: ${err}`);
-            ws.send(`Error: invalid fileinfo`);
+            ws.send(JSON.stringify({ result: "ERROR", error: "invalid fileinfo" }));
             return;
         }
     }

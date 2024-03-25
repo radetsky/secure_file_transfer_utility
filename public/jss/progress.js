@@ -33,6 +33,9 @@ function showProgressBar() {
 function hideProgressBar() {
     if (modal_progress) {
         modal_progress.hide();
+    } else {
+        // If the modal is not created yet, try again in 1 second
+        setTimeout(hideProgressBar, 1000);
     }
 }
 

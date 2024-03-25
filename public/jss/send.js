@@ -153,7 +153,7 @@ function onMessage(ws, msg) {
 }
 
 function pingServer() {
-    wss.send(`${fileinfo.uuid}|PING|`);
+    wss.send(`${fileinfo?.uuid}|PING|`);
 }
 
 function open_ws() {
@@ -233,7 +233,12 @@ function saveChunk(file, offset) {
                 return;
             }
             state.offset_lists.push(offset); // store to the list of offsets
-            offset += chunkSize;
+            if (fileinfo.size < chunkSize) {
+                offset = fileinfo.size;
+            } else {
+                offset += chunkSize;
+            }
+            console.log(offset, chunkSize, fileinfo);
             setBarWidth(offset / fileinfo.size * 100);
             setProgressDetails(offset, fileinfo.size);
             if (offset < file.size) {
@@ -242,9 +247,11 @@ function saveChunk(file, offset) {
                 console.log("Файл повністю завантажено у IndexedDB");
                 let receiveUrl = document.getElementById('receive_url').textContent.trim();
                 receiveUrl = receiveUrl + '/' + document.getElementById('masterKey').textContent;
+                console.log("Отримайте файл за посиланням: ", receiveUrl);
                 document.getElementById('receive_url').textContent = receiveUrl;
                 document.getElementById('receive_url').style.display = 'block';
                 hideProgressBar();
+                console.log("hideProgressBar")
                 document.getElementById('encryption_key_table').style.display = 'none';
                 document.getElementById('receive_url_table').style.display = 'block';
             }

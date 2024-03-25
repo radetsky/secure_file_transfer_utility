@@ -117,9 +117,8 @@ function onMessage(ws, msg) {
 }
 
 function pingServer() {
-    wss.send(`${fileinfo.uuid}|PING|`);
+    wss.send(`${fileinfo?.uuid}|PING|`);
 }
-
 
 function open_ws() {
     if (wss) {
