@@ -2,4 +2,5 @@ node_modules
 public/jss/libthemis.wasm
 public/jss/main.js
 .env.fish
+.DS_Store
 
