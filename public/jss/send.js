@@ -11,6 +11,7 @@ let state = {
     sent_offset: 0,
     confirmed_offset: 0,
     offset_lists: [],
+    initial_offsets: [],
 }
 
 document.addEventListener("DOMContentLoaded", function() {
@@ -22,7 +23,9 @@ document.addEventListener("DOMContentLoaded", function() {
     hideProgressBar();
     themis.init().then(() => {
         masterKey = themis.masterKey();
-        document.getElementById('masterKey').textContent = themis.uint8ArrayToHex(masterKey);
+        const hexString = themis.uint8ArrayToHex(masterKey);
+        const hyphenatedString = themis.hexStringToHyphenatedString(hexString);
+        document.getElementById('masterKey').textContent = hyphenatedString;
     });
 });
 
@@ -113,6 +116,7 @@ function onMessage(ws, msg) {
             switch(info.result) {
                 case "bob is ready":
                     if (info.id === getDocumentId()) {
+                        state.offset_lists = state.initial_offsets.slice();
                         sendFile();
                     }
                     return;
@@ -255,6 +259,7 @@ function saveChunk(file, offset) {
                 hideProgressBar();
                 document.getElementById('encryption_key_div').style.display = 'none';
                 document.getElementById('receive_url_div').style.display = 'block';
+                state.initial_offsets = state.offset_lists.slice();
             }
         };
         tr.commit();

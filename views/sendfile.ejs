@@ -21,10 +21,22 @@
                     <input type="file" class="form-control" id="fileInput">
                 </div>
                 <button id="upload_button" onclick="uploadFile('<%= id %>')" type="submit" class="btn btn-primary btn-md px-4 gap-3">Encrypt the file</button>
-                <div id="fileInfo" style="display: none;">
-                    <h4>You have selected the following file</h4>
-                    <p id="fileName"></p>
-                    <p>Size of the file: <span id="fileSize"></span> bytes</p>
+                <div id="fileInfo" class="container focus-ring py-1 px-2 border rounded-2" style="display: none;">
+                    <div class="row">
+                        <div class="col">
+                            <h4 class="hyphenate">You have selected and encrypted the following file</h4>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <p class="hyphenate" id="fileName"></p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <p>Size of the file: <span id="fileSize"></span> bytes</p>
+                        </div>
+                    </div>
                 </div>
                 <div id="encryption_cancelled" style="display: none;">
                     <h4>Encryption cancelled</h4>

@@ -17,7 +17,8 @@ document.addEventListener("DOMContentLoaded", function() {
     wss = open_ws();
     hideProgressBar();
     themis.init().then(() => {
-        const hexKey = document.getElementById('masterKey').textContent;
+        const hyphenatedString = document.getElementById('masterKey').textContent;
+        const hexKey = themis.hyphenatedStringToHexString(hyphenatedString);
         masterKey = themis.hexToUint8Array(hexKey);
     });
 });
@@ -108,6 +109,7 @@ function onMessage(ws, msg) {
                     } catch (err) {
                         state = 'ERROR';
                         console.error("Error decrypting data: ", err);
+                        hideProgressBar();
                         errorMessageBox("Error decrypting data", "The key is invalid. Make sure you have the correct URL and try again.");
                     }
                 });
@@ -131,7 +133,6 @@ function open_ws() {
     wss = new WebSocket(`${wsproto}://${location.host}`);
     wss.onerror = function () {
         console.error('WebSocket error');
-        errorMessageBox('Error', 'WebSocket error. Please reload the page!')
     };
     wss.onopen = function () {
         console.debug('WebSocket connection established');
@@ -140,6 +141,7 @@ function open_ws() {
     };
     wss.onclose = function () {
         console.debug('WebSocket connection closed');
+        warningMessageBox('Connection closed', 'The connection to the server was closed. Please reload the page to try again.');
         wss = null;
     };
     wss.onmessage = function (event) {
