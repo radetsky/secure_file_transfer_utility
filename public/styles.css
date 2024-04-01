@@ -179,4 +179,9 @@
   filter: none;
   opacity: .5;
 }
-
+.hyphenate {
+  hyphens: auto;
+  -webkit-hyphens: auto; /* For Safari */
+  -moz-hyphens: auto; /* For Firefox */
+  -ms-hyphens: auto; /* For Microsoft Edge */
+}

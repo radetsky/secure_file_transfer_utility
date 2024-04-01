@@ -41,7 +41,7 @@ function sendChunk(read_offset) {
         console.log("Відправка файлу скасована");
         document.getElementById('upload_cancelled').style.display = 'block';
         document.getElementById('fileInfo').style.display = 'none';
-        document.getElementById('receive_url_table').style.display = 'none';
+        document.getElementById('receive_url_div').style.display = 'none';
         return;
     }
     if (read_offset === undefined) {
@@ -129,7 +129,7 @@ function onMessage(ws, msg) {
                     errorMessageBox("Error", "The file upload was cancelled by the recipient.");
                     document.getElementById('upload_cancelled').style.display = 'block';
                     document.getElementById('fileInfo').style.display = 'none';
-                    document.getElementById('receive_url_table').style.display = 'none';
+                    document.getElementById('receive_url_div').style.display = 'none';
                     return;
                 case 'RCVD':
                     console.log("Confirmed offset: ", info.offset);
@@ -165,8 +165,8 @@ function open_ws() {
     }
     const wsproto = location.protocol === 'https:' ? 'wss' : 'ws';
     wss = new WebSocket(`${wsproto}://${location.host}`);
-    wss.onerror = function () {
-        console.error('WebSocket error');
+    wss.onerror = function (event) {
+        console.error('WebSocket error:', event.message);
         errorMessageBox("Error", "WebSocket error");
     };
     wss.onopen = function () {
@@ -176,6 +176,7 @@ function open_ws() {
     };
     wss.onclose = function () {
         console.debug('WebSocket connection closed');
+        warningMessageBox("Warning", "WebSocket connection closed. Please, reload the page to try again.");
         wss = null;
     };
     wss.onmessage = function (event) {
@@ -252,8 +253,8 @@ function saveChunk(file, offset) {
                 document.getElementById('receive_url').textContent = receiveUrl;
                 document.getElementById('receive_url').style.display = 'block';
                 hideProgressBar();
-                document.getElementById('encryption_key_table').style.display = 'none';
-                document.getElementById('receive_url_table').style.display = 'block';
+                document.getElementById('encryption_key_div').style.display = 'none';
+                document.getElementById('receive_url_div').style.display = 'block';
             }
         };
         tr.commit();

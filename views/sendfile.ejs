@@ -37,38 +37,41 @@
             </div>
         </div>
 
-        <div class="mt-4 col-lg-9 mx-auto" id="encryption_key_table">
-            <table class="table col-lg-9" >
-                <caption>The key is used to encrypt the file</caption>
-                <thead>
-                    <tr>
-                        <th scope="col"><p class="lead">Encryption key</p></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><p class="fs-5 font-monospace fw-light" id="masterKey"></p></td>
-                    </tr>
-                </tbody>
-            </table>
+        <div class="container" id="encryption_key_div" style="display: block">
+            <div class="row">
+                <div class="col">
+                    <p class="fs-5 font-monospace fw-light hyphenate text-center"><h2 class="lead">Encryption key</h2></p>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col">
+                    <p class="fs-5 font-monospace fw-light hyphenate text-center" id="masterKey"></p>
+                </div>
+            </div>
         </div>
 
-        <div class="mt-4 col-lg-12 mx-auto" id="receive_url_table" style="display: none;">
-            <table class="table col-lg-9" >
-                <caption>You can share this URL with the recipient to allow them to download the file. Do not close the window!</caption>
-                <thead>
-                    <tr>
-                        <th scope="col"><p class="lead">Share the URL
-                            <svg onclick="copyToClipboard('receive_url');"  class="bi mt-4 mb-3" style="color: var(--bs-indigo);" width="16" height="16"><use xlink:href="#copy-to-clipboard"/></svg>
-                        </p> and do not close the window!</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><p class="fs-5 font-monospace fw-light" id="receive_url"><%= receive_url %></p></td>
-                    </tr>
-                </tbody>
-            </table>
+        <div class="mt-4 container" id="receive_url_div" style="display: none;">
+            <div class="row">
+                <div class="col">
+                    <p>You should share this URL with the recipient to allow them to download the file. Do not close the window!</p>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col">
+                    <p class="lead">
+                        <button class="btn btn-primary" onclick="copyToClipboard('receive_url')">Copy URL</button>
+                        <svg onclick="copyToClipboard('receive_url');"  class="bi mt-4 mb-3" style="color: var(--bs-indigo);" width="32" height="32">
+                            <use xlink:href="#copy-to-clipboard"/>
+                        </svg>
+                    </p>
+                    <p>Share the URL and do not close the window!</p>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col">
+                    <p class="fs-5 font-monospace fw-light hyphenate" id="receive_url"><%= receive_url %></p>
+                </div>
+            </div>
         </div>
 
     </div>

@@ -1,6 +1,9 @@
 node_modules
 public/jss/libthemis.wasm
 public/jss/main.js
+public/jss/send.min.js
+public/jss/receive.min.js
+public/jss/progress.min.js
 .env.fish
 .DS_Store
 

@@ -45,5 +45,12 @@ function errorMessageBox(title, body) {
     document.getElementById('alert-modal-text').textContent = body;
     const alert_modal = new bootstrap.Modal(document.getElementById('alert-modal'));
     alert_modal.show();
-
 }
+function warningMessageBox(title, body) {
+    document.getElementById('warning-modal-title').textContent = title;
+    document.getElementById('warning-modal-text').textContent = body;
+    const alert_modal = new bootstrap.Modal(document.getElementById('warning-modal'));
+    alert_modal.show();
+}
+
+
