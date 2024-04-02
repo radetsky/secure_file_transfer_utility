@@ -14,7 +14,7 @@ let state = {
     initial_offsets: [],
 }
 
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", function () {
     delete_db();
     dbh = open_db();
     wss = open_ws();
@@ -252,6 +252,7 @@ function saveChunk(file, offset) {
                 saveChunk(file, offset);
             } else {
                 console.log("Файл повністю завантажено у IndexedDB");
+                push_notification("The file is encrypted successfully. Share the URL. Do not close the window until the recipient downloads the file from your device.");
                 let receiveUrl = document.getElementById('receive_url').textContent.trim();
                 receiveUrl = receiveUrl + '/' + document.getElementById('masterKey').textContent;
                 document.getElementById('receive_url').textContent = receiveUrl;

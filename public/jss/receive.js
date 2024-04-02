@@ -66,6 +66,9 @@ function onMessage(ws, msg) {
                     }
                     state = 'EOF';
                     setTimeout(showSaveBtn, 1000);
+                    setTimeout(() => {
+                        push_notification("File received successfully. You may save it now.");
+                    }, 1000);
                     return;
                 case 'ERROR':
                     state = 'ERROR';

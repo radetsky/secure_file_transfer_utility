@@ -53,4 +53,12 @@ function warningMessageBox(title, body) {
     alert_modal.show();
 }
 
+function push_notification(text) {
+    const toast = document.getElementById('toast-notification-id');
+    const bsToast = bootstrap.Toast.getOrCreateInstance(toast);
+    const toast_body = document.getElementById('toast-notification-body');
+    toast_body.textContent = text;
+    bsToast.show();
+}
+
 
