@@ -124,7 +124,7 @@ app.get('/receive/:id/:key', (req, res) => {
     }
     res.render('receivefile', { id, key });
 });
-app.get('/status/admin', (req, res) => {
+app.get('/status/current', (req, res) => {
     // return JSON of map
     const status = [];
     for (const [key, value] of map.entries()) {
@@ -138,6 +138,14 @@ app.get('/status/admin', (req, res) => {
         status.push(new_value);
     }
     res.json(status);
+});
+app.get('/status/total', async (req, res) => {
+    try {
+        const total = await getTotalEncryptedFilesCount();
+        res.json(total);
+    } catch (error) {
+        res.status(500).send('Error fetching total count of encrypted files');
+    }
 });
 
 app.get('/', (req, res) => {
@@ -161,6 +169,24 @@ function insert_transferred_fileinfo(enc_uuid, name, size, ip) {
         [id, enc_uuid, name, size, ip]).catch((err) => {
         logger.error(`Error inserting transferred file info: ${err}`);
     });
+}
+
+async function getTotalEncryptedFilesCount() {
+    try {
+        const encrypted_files = await db.one('SELECT COUNT(*) FROM encrypted_files');
+        const encrypted_count = parseInt(encrypted_files.count);
+        const transferred_files = await db.one('SELECT COUNT(*) FROM transferred_files');
+        const transferred_count = parseInt(transferred_files.count);
+        const connections_count = map.size;
+        return {
+            encrypted: encrypted_count,
+            transferred: transferred_count,
+            connections: connections_count,
+        };
+    } catch (error) {
+        console.error('Error fetching total count of encrypted files:', error);
+        throw error; // Throw the error to handle it outside
+    }
 }
 
 /* WebSocket server */
