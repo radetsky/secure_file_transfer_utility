@@ -17,7 +17,7 @@
   },
   "scripts": {
     "start": "node server.js",
-    "build": "webpack build"
+    "build": "webpack build && sh ./minify.sh"
   },
   "devDependencies": {
     "@webpack-cli/generators": "^3.0.7",

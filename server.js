@@ -10,8 +10,9 @@ const db = pgp(process.env.PGDB)
 const express = require('express');
 const http = require('http');
 const uuid = require('uuid');
-const { WebSocketServer } = require('ws');
+const { WebSocketServer, WebSocket } = require('ws');
 const winston = require("winston");
+const { clear } = require('console');
 
 const greetingAlice = "I am Alice!";
 const greetingBob = "I am Bob!";
@@ -33,6 +34,23 @@ const logger = winston.createLogger({
 });
 
 const map = new Map();
+setInterval(() => {
+    for (const [key, value] of map.entries()) {
+        if (value.alice?.readyState === WebSocket.CLOSED) {
+            value.alice = null;
+        }
+        if (value.bob?.readyState === WebSocket.CLOSED) {
+            value.bob = null;
+        }
+        if (value.alice === null && value.bob === null) {
+            logger.debug(`Removing ${key} from the map`);
+            map.delete(key);
+        } else {
+            map.set(key, value);
+        }
+    }
+}, 10 * 1000);
+
 const session_info = {
     id: null, // copy of the key
     name: null, // file name
@@ -78,7 +96,8 @@ app.post('/sendfile', (req, res) => {
 });
 app.get('/send/:id', (req, res) => {
     let id = req.params.id;
-    const receive_url = `${req.protocol}://${req.get('host')}/receive/${id}`
+    const proto = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+    const receive_url = `${proto}://${req.get('host')}/receive/${id}`
     const info = map.get(id);
     if (!info) {
         res.status(404).sendFile(page404);
@@ -105,20 +124,28 @@ app.get('/receive/:id/:key', (req, res) => {
     }
     res.render('receivefile', { id, key });
 });
-app.get('/status/admin', (req, res) => {
+app.get('/status/current', (req, res) => {
     // return JSON of map
     const status = [];
     for (const [key, value] of map.entries()) {
+        let new_value = {...value};
         if (value.alice !== null) {
-            value.alice = 'connected';
+            new_value.alice = 'connected';
         }
         if (value.bob !== null) {
-            value.bob = 'connected';
+            new_value.bob = 'connected';
         }
-        status.push(value);
+        status.push(new_value);
     }
-
     res.json(status);
+});
+app.get('/status/total', async (req, res) => {
+    try {
+        const total = await getTotalEncryptedFilesCount();
+        res.json(total);
+    } catch (error) {
+        res.status(500).send('Error fetching total count of encrypted files');
+    }
 });
 
 app.get('/', (req, res) => {
@@ -142,6 +169,24 @@ function insert_transferred_fileinfo(enc_uuid, name, size, ip) {
         [id, enc_uuid, name, size, ip]).catch((err) => {
         logger.error(`Error inserting transferred file info: ${err}`);
     });
+}
+
+async function getTotalEncryptedFilesCount() {
+    try {
+        const encrypted_files = await db.one('SELECT COUNT(*) FROM encrypted_files');
+        const encrypted_count = parseInt(encrypted_files.count);
+        const transferred_files = await db.one('SELECT COUNT(*) FROM transferred_files');
+        const transferred_count = parseInt(transferred_files.count);
+        const connections_count = map.size;
+        return {
+            encrypted: encrypted_count,
+            transferred: transferred_count,
+            connections: connections_count,
+        };
+    } catch (error) {
+        console.error('Error fetching total count of encrypted files:', error);
+        throw error; // Throw the error to handle it outside
+    }
 }
 
 /* WebSocket server */
@@ -227,12 +272,17 @@ function onMessage(ws, bufferMessage, remote_ip) {
     const id = parts[0];
     const info = map.get(id);
     if (!info) {
-        ws.send(`Error: unknown id ${id}`);
+        if (id === 'undefined' && parts[1] === 'PING') {
+            logger.debug(`Ping received from ${remote_ip}`);
+            return;
+        }
+        ws.send(JSON.stringify({ result: "ERROR", error: `unknown id ${id}` }));
         return;
     }
     const whomSocket = whomSocketIs(ws, info);
     if (parts.length < 3) {
-        ws.send(`Error: invalid message`);
+        logger.error(`Invalid message: ${message} from ${remote_ip}`);
+        ws.send(JSON.stringify({ result: "ERROR", error: "invalid message" }));
         return;
     }
     const command = parts[1];
@@ -247,7 +297,7 @@ function onMessage(ws, bufferMessage, remote_ip) {
             ws.send(JSON.stringify({ result: "OK", id: id, fileinfo: `${info.name} (${info.size} bytes)` }));
         } catch (err) {
             logger.error(`Error parsing fileinfo: ${err}`);
-            ws.send(`Error: invalid fileinfo`);
+            ws.send(JSON.stringify({ result: "ERROR", error: "invalid fileinfo" }));
             return;
         }
     }
@@ -289,8 +339,23 @@ function onMessage(ws, bufferMessage, remote_ip) {
         logger.debug(`${whomSocket} -> EOF: ${id}`);
         insert_transferred_fileinfo(id, info.name, info.size, info.bob_ip);
         info.bob.send(JSON.stringify({ result: "EOF" }));
-        // remove the session info
-        map.delete(id);
+        info.state['offset'] = -1;
+    }
+
+    if (command === 'CANCEL') {
+        logger.debug(`${whomSocket} -> CANCEL: ${id}`);
+        if (whomSocket === 'Alice') {
+            if (info.bob !== null) {
+                info.bob.send(JSON.stringify({ result: "CANCEL" }));
+            }
+        } else {
+            if (info.alice !== null) {
+                info.alice.send(JSON.stringify({ result: "CANCEL" }));
+            }
+        }
+    }
+    if (command === "PING") {
+        logger.debug(`${whomSocket} -> PING: ${id}`);
     }
 }
 
@@ -311,27 +376,39 @@ wss.on('connection', function (ws, req) {
         onMessage(ws, message, remote_ip);
     });
     ws.on('close', function () {
-        logger.debug('WebSocket was closed by' + remote_ip);
+        logger.debug('WebSocket was closed by ' + remote_ip);
         for (const [key, value] of map.entries()) {
-            if (value.alice === ws && value.name !== null) {
-                map.delete(key);
-                logger.debug(`Deleted map entry ${key}`);
+            if (value.alice === ws || value.alice?.readyState === WebSocket.CLOSED) {
+                if (value.bob !== null) {
+                    if (value.bob !== null) {
+                        try {
+                            value.bob.send(JSON.stringify({
+                                result: "ERROR",
+                                error: "The sender has ended the connection. Please wait for them to send a new URL."
+                            }));
+                        } catch (err) {
+                            logger.error(`Error sending message to Bob: ${err}`);
+                        }
+                    }
+                }
+                value.alice = null;
+                value.alice_ip = null;
+                map.set(key, value);
             }
-            if (value.alice === ws && value.bob !== null) {
-                value.bob.send(JSON.stringify({
-                    result: "ERROR",
-                    error: "The sender has ended the connection. Please wait for them to send a new URL."
-                }));
-                map.delete(key);
-                logger.debug(`Deleted map entry ${key}`);
-            }
-            if (value.bob === ws) {
-                value.alice.send(JSON.stringify({
-                    result: "ERROR",
-                    error: "Recepient has ended the connection."
-                }));
-                map.delete(key);
-                logger.debug(`Deleted map entry ${key}`);
+            if (value.bob === ws || value.bob?.readyState === WebSocket.CLOSED) {
+                if (value.alice !== null) {
+                    try {
+                        value.alice.send(JSON.stringify({
+                            result: "ERROR",
+                            error: "Recepient has ended the connection."
+                        }));
+                    } catch (err) {
+                        logger.error(`Error sending message to Alice: ${err}`);
+                    }
+                }
+                value.bob = null;
+                value.bob_ip = null;
+                map.set(key, value);
             }
         }
     });

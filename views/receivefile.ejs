@@ -18,6 +18,14 @@
             <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
                 <div id="fileInfo">
                 </div>
+                <div id="save_cancelled" style="display: none;">
+                    <h4>Save cancelled</h4>
+                    <p>The file was not saved. Please try again.</p>
+                </div>
+                <div id="download_cancelled" style="display: none;">
+                    <h4>Download cancelled</h4>
+                    <p>The file was not received. Please try again.</p>
+                </div>
             </div>
         </div>
         <div id="uuid" style="display: none;"><%= id %></div>
@@ -40,7 +48,7 @@
         </div>
     </div>
 
-    <div class="modal fade" tabindex="-1" id="progress-modal">
+    <div class="modal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" id="progress-modal">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
@@ -50,16 +58,29 @@
                     <div class="progress" role="progressbar" aria-label="Encryption progress" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
                         <div class="progress-bar progress-bar-striped progress-bar-animated" id="myBar" style="width: 0%"></div>
                     </div>
+                    <div class="mt-4">
+                        <p class="lead" id="progress-details">0 of 0 bytes</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="cancelProgress()">Cancel</button>
                 </div>
             </div>
         </div>
     </div>
 
     <%- include('partials/footer') %>
+    <script src="/bs/bootstrap.bundle.min.js" ></script>
+
+    <% if (process.env.NODE_ENV === 'production') { %>
     <script src="/jss/receive.min.js"></script>
     <script src="/jss/progress.min.js"></script>
+    <script src="/jss/main.min.js"></script>
+<% } else { %>
+    <script src="/jss/receive.js"></script>
+    <script src="/jss/progress.js"></script>
     <script src="/jss/main.js"></script>
-    <script src="/bs/bootstrap.min.js" ></script>
+<% } %>
 
 </body>
 </html>

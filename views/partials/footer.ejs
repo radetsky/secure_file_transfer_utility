@@ -1,5 +1,11 @@
 <div class="container">
     <footer class="py-3 my-4">
+        <div class="row">
+            <div class="col">
+                <p class="text-center text-body-secondary">Whether it was successful or not,
+                    <a href="mailto:oleksii.radetskyi@gmail.com?subject='Feedback'">please give us feedback.</a></p>
+            </div>
+        </div>
         <ul class="nav justify-content-center border-bottom pb-3 mb-3">
             <li class="nav-item"><a href="/" class="nav-link px-2 text-body-secondary">Home</a></li>
             <li class="nav-item"><a href="/terms_of_service" class="nav-link px-2 text-body-secondary">Terms of Use</a></li>
@@ -9,13 +15,14 @@
             <li class="nav-item"><a href="/how_it_works" class="nav-link px-2 text-body-secondary">How It Works</a></li>
         </ul>
       <p class="text-center text-body-secondary">&copy; 2024 Secure File Transfer Utility</p>
+      <p class="text-center text-body-secondary"><small>Last modified: 2024-04-02</small></p>
     </footer>
 </div>
-<div class="modal fade" tabindex="-1" id="alert-modal">
+<div class="modal" tabindex="-1" id="alert-modal">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h4 class="alert-modal-title" id="alert-modal-title"></h4>
+                <h4 class="alert-modal-title" id="alert-modal-title">Title</h4>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="alert-modal-body">
@@ -28,4 +35,22 @@
         </div>
     </div>
 </div>
+<div class="modal" tabindex="-1" id="warning-modal">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="warning-modal-title" id="warning-modal-title">Title</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="alert-modal-body">
+                <div class="alert alert-warning" role="alert" id="warning-modal-text">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 

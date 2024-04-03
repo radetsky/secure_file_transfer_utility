@@ -19,6 +19,18 @@ function base64decode(encodedData) {
     return Base64ToBytes(encodedData);
 }
 
+function hexStringToHyphenatedString(inputString) {
+    const parts = [];
+    for (let i = 0; i < 64; i += 8) {
+        parts.push(inputString.substring(i, i + 8));
+    }
+    return parts.join('-');
+}
+
+function hyphenatedStringToHexString(inputString) {
+    return inputString.replace(/-/g, '');
+}
+
 function uint8ArrayToHex(uint8Array) {
     return Array.prototype.map.call(uint8Array, function(byte) {
         return ('0' + (byte & 0xFF).toString(16)).slice(-2);
@@ -54,6 +66,8 @@ export {
     base64decode,
     base64encode,
     uint8ArrayToHex,
-    hexToUint8Array
+    hexToUint8Array,
+    hexStringToHyphenatedString,
+    hyphenatedStringToHexString,
 };
 

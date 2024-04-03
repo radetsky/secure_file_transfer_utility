@@ -17,7 +17,8 @@ document.addEventListener("DOMContentLoaded", function() {
     wss = open_ws();
     hideProgressBar();
     themis.init().then(() => {
-        const hexKey = document.getElementById('masterKey').textContent;
+        const hyphenatedString = document.getElementById('masterKey').textContent;
+        const hexKey = themis.hyphenatedStringToHexString(hyphenatedString);
         masterKey = themis.hexToUint8Array(hexKey);
     });
 });
@@ -54,26 +55,39 @@ function onMessage(ws, msg) {
         const info = JSON.parse(msg);
         if (info.result !== undefined) {
             switch (info.result) {
-            case 'OK':
-                state = 'OK';
-                fileinfo = info;
-                showFileInfo();
-                return;
-            case 'EOF':
-                if (state === 'ERROR') {
-                    errorMessageBox("Error decrypting data", "The key is invalid. Make sure you have the correct URL and try again.");
-                }
-                state = 'EOF';
-                setTimeout(showSaveBtn, 1000);
-                return;
-            case 'ERROR':
-                state = 'ERROR';
-                console.error("Error: ", info.error);
-                errorMessageBox("Error", info.error);
-                return;
-            default:
-                console.error("Invalid result: ", info.result);
-                return;
+                case 'OK':
+                    state = 'OK';
+                    fileinfo = info;
+                    showFileInfo();
+                    return;
+                case 'EOF':
+                    if (state === 'ERROR') {
+                        errorMessageBox("Error decrypting data", "The key is invalid. Make sure you have the correct URL and try again.");
+                    }
+                    state = 'EOF';
+                    setTimeout(showSaveBtn, 1000);
+                    setTimeout(() => {
+                        push_notification("File received successfully. You may save it now.");
+                    }, 1000);
+                    return;
+                case 'ERROR':
+                    state = 'ERROR';
+                    console.error("Error: ", info.error);
+                    errorMessageBox("Error", info.error);
+                    return;
+                case 'CANCEL':
+                    state = 'CANCEL';
+                    console.log("File transfer cancelled by the sender");
+                    errorMessageBox("File transfer cancelled", "The sender cancelled the file transfer.");
+                    hideProgressBar();
+                    document.getElementById('receiveFileBtn').style.display = 'none';
+                    document.getElementById('saveFileBtn').style.display = 'none';
+                    document.getElementById('download_cancelled').style.display = 'block';
+                    document.getElementById('fileInfo').style.display = 'none';
+                    return;
+                default:
+                    console.error("Invalid result: ", info.result);
+                    return;
             }
         }
     } catch (err) {
@@ -98,6 +112,7 @@ function onMessage(ws, msg) {
                     } catch (err) {
                         state = 'ERROR';
                         console.error("Error decrypting data: ", err);
+                        hideProgressBar();
                         errorMessageBox("Error decrypting data", "The key is invalid. Make sure you have the correct URL and try again.");
                     }
                 });
@@ -106,27 +121,37 @@ function onMessage(ws, msg) {
     }
 }
 
+function pingServer() {
+    if (wss) {
+        wss.send(`${fileinfo?.uuid}|PING|`);
+    }
+}
+
 function open_ws() {
     if (wss) {
         wss.onerror = ws.onopen = ws.onclose = null;
         wss.close();
     }
-    wss = new WebSocket(`ws://${location.host}`);
+    const wsproto = location.protocol === 'https:' ? 'wss' : 'ws';
+    wss = new WebSocket(`${wsproto}://${location.host}`);
     wss.onerror = function () {
         console.error('WebSocket error');
-        errorMessageBox('Error', 'WebSocket error. Please reload the page!')
     };
     wss.onopen = function () {
         console.debug('WebSocket connection established');
         send_greeting();
+        setInterval(pingServer, 10 * 1000);
     };
     wss.onclose = function () {
         console.debug('WebSocket connection closed');
+        warningMessageBox('Connection closed', 'The connection to the server was closed. Please reload the page to try again.');
         wss = null;
     };
     wss.onmessage = function (event) {
-        console.debug(`Received message: ${event.data.length} bytes`);
-        onMessage(wss, event.data);
+        if (event.data) {
+            console.debug(`Received message: ${event.data.length} bytes`);
+            onMessage(wss, event.data);
+        }
     };
     return wss;
 }
@@ -155,6 +180,16 @@ function open_db() {
 }
 
 function saveChunk(data, offset) {
+    if (progress_cancelled) {
+        console.debug("Cancel receiving file");
+        wss.send(`${fileinfo.uuid}|CANCEL|`);
+        hideProgressBar();
+        document.getElementById('receiveFileBtn').style.display = 'none';
+        document.getElementById('saveFileBtn').style.display = 'none';
+        document.getElementById('download_cancelled').style.display = 'block';
+        document.getElementById('fileInfo').style.display = 'none';
+        progress_cancelled = false;
+    }
     const tr = dbh.transaction([osName], "readwrite");
     tr.onerror = function(event) {
         console.error("Помилка транзакції");
@@ -168,6 +203,7 @@ function saveChunk(data, offset) {
     };
     tr.commit();
     setBarWidth(offset / fileinfo.size * 100);
+    setProgressDetails(offset, fileinfo.size);
 }
 
 function saveFileToFS() {
@@ -176,13 +212,22 @@ function saveFileToFS() {
     const request = os.openCursor();
     let listOfBlobs = [];
     setBarWidth(0);
+    setProgressDetails(0, fileinfo.size);
     showProgressBar();
     setProgressTitle('Saving file to your computer...');
-    request.onsuccess = function(event) {
+    request.onsuccess = function (event) {
+        if (progress_cancelled) {
+            hideProgressBar();
+            document.getElementById('receiveFileBtn').style.display = 'none';
+            document.getElementById('saveFileBtn').style.display = 'none';
+            document.getElementById('save_cancelled').style.display = 'block';
+            return;
+        }
         const cursor = event.target.result;
         if (cursor) {
             listOfBlobs.push(cursor.value.data);
             setBarWidth(cursor.value.id / fileinfo.size * 100);
+            setProgressDetails(cursor.value.id, fileinfo.size);
             cursor.continue();
         } else {
             hideProgressBar();
